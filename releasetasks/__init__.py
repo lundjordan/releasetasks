@@ -43,9 +43,11 @@ def make_task_graph(public_key, signing_pvt_key,
         # is as good as never....
         "never": arrow.now().replace(years=1000),
         # Treeherder expects 12 symbols in revision
-        "revision_hash": th.get_resultsets(
-            template_kwargs["branch"],
-            revision=template_kwargs["revision"][:12])[0]["revision_hash"],
+        "revision_hash": "abcdefgh1234567",
+        # TODO HACKS!
+        # "revision_hash": th.get_resultsets(
+        #     template_kwargs["branch"],
+        #     revision=template_kwargs["revision"][:12])[0]["revision_hash"],
         "get_treeherder_platform": treeherder_platform,
         "encrypt_env_var": lambda *args: encryptEnvVar(*args,
                                                        keyFile=public_key),
