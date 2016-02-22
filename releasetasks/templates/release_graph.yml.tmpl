@@ -76,10 +76,12 @@ tasks:
         {{ bouncer_tasks()|indent(4) }}
     {% endif %}
 
-    {% macro checksums_tasks() %}
-        {% include "checksums.yml.tmpl" %}
-    {% endmacro %}
-    {{ checksums_tasks()|indent(4) }}
+    {% if checksums_enabled %}
+      {% macro checksums_tasks() %}
+          {% include "checksums.yml.tmpl" %}
+      {% endmacro %}
+      {{ checksums_tasks()|indent(4) }}
+    {% endif %}
 
     {% if release_channels is defined %}
         {% macro updates_task() %}

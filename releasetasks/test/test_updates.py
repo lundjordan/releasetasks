@@ -17,6 +17,7 @@ class TestUpdates(unittest.TestCase):
             appVersion="42.0",
             buildNumber=3,
             source_enabled=False,
+            checksums_enabled=False,
             en_US_config={
                 "platforms": {
                     "macosx64": {"task_id": "abc"},

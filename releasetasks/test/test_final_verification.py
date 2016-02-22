@@ -18,6 +18,7 @@ class TestFinalVerification(unittest.TestCase):
             appVersion="42.0",
             buildNumber=3,
             source_enabled=False,
+            checksums_enabled=False,
             en_US_config={
                 "platforms": {
                     "macosx64": {},
@@ -123,6 +124,7 @@ class TestFinalVerificationMultiChannel(unittest.TestCase):
             revision="fedcba654321",
             branch="foo",
             updates_enabled=False,
+            checksums_enabled=False,
             bouncer_enabled=False,
             push_to_candidates_enabled=False,
             postrelease_version_bump_enabled=False,
