@@ -48,7 +48,7 @@ class TestChecksums(unittest.TestCase):
             balrog_api_root="http://balrog/api",
             signing_pvt_key=PVT_KEY_FILE,
         )
-        self.task = get_task_by_name(self.graph, "release-foo_firefox_chcksms")
+        self.task = get_task_by_name(self.graph, "release-foo-firefox_chcksms")
         self.payload = self.task["task"]["payload"]
 
     def test_common_assertions(self):
