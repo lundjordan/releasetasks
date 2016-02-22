@@ -19,11 +19,11 @@ class TestChecksums(unittest.TestCase):
             source_enabled=False,
             en_US_config={
                 "platforms": {
-                    "macosx64": {},
-                    "win32": {},
-                    "win64": {},
-                    "linux": {},
-                    "linux64": {},
+                    "macosx64": {"task_id": "abc"},
+                    "win32": {"task_id": "def"},
+                    "win64": {"task_id": "jgh"},
+                    "linux": {"task_id": "ijk"},
+                    "linux64": {"task_id": "lmn"},
                 }
             },
             l10n_config={},
@@ -48,8 +48,7 @@ class TestChecksums(unittest.TestCase):
             balrog_api_root="http://balrog/api",
             signing_pvt_key=PVT_KEY_FILE,
         )
-        self.task = get_task_by_name(self.graph,
-                                     "release-foo_chcksms")
+        self.task = get_task_by_name(self.graph, "release-foo-firefox_chcksms")
         self.payload = self.task["task"]["payload"]
 
     def test_common_assertions(self):
@@ -63,9 +62,6 @@ class TestChecksums(unittest.TestCase):
 
     def test_scopes_present(self):
         self.assertFalse("scopes" in self.task)
-
-    def test_build_number(self):
-        self.assertEqual(self.payload["properties"]["build_number"], 3)
 
     def test_graph_scopes(self):
         expected_graph_scopes = set([
