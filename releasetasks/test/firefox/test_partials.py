@@ -1,7 +1,8 @@
 import unittest
 
-from releasetasks.test import make_task_graph, PVT_KEY_FILE, \
-    do_common_assertions, get_task_by_name
+from releasetasks.test.firefox import make_task_graph, do_common_assertions, \
+    get_task_by_name
+from releasetasks.test import PVT_KEY_FILE
 
 
 class TestEnUSPartials(unittest.TestCase):
@@ -14,9 +15,11 @@ class TestEnUSPartials(unittest.TestCase):
             appVersion="42.0",
             buildNumber=3,
             source_enabled=False,
+            checksums_enabled=False,
             updates_enabled=True,
             bouncer_enabled=False,
             push_to_candidates_enabled=False,
+            push_to_releases_enabled=False,
             postrelease_version_bump_enabled=False,
             en_US_config={"platforms": {
                 "macosx64": {"task_id": "xyz"},
@@ -35,11 +38,14 @@ class TestEnUSPartials(unittest.TestCase):
             repo_path="releases/mozilla-beta",
             product="firefox",
             revision="abcdef123456",
-            balrog_api_root="https://fake.balrog/api",
+            mozharness_changeset="abcd",
+            balrog_api_root="https://balrog.real/api",
+            funsize_balrog_api_root="http://balrog/api",
             signing_class="release-signing",
             verifyConfigs={},
             release_channels=["beta"],
             signing_pvt_key=PVT_KEY_FILE,
+            build_tools_repo_path='build/tools',
         )
 
     def test_common_assertions(self):
@@ -69,8 +75,8 @@ class TestEnUSPartials(unittest.TestCase):
     def test_funsize_en_US_scopes(self):
         expected_scopes = set([
             "queue:*", "docker-worker:*", "scheduler:*",
-            "signing:format:gpg", "signing:format:mar",
-            "signing:cert:release-signing",
+            "project:releng:signing:format:gpg", "project:releng:signing:format:mar",
+            "project:releng:signing:cert:release-signing",
             "docker-worker:feature:balrogVPNProxy"
         ])
         self.assertTrue(expected_scopes.issubset(self.graph["scopes"]))
@@ -83,14 +89,18 @@ class TestEnUSPartials(unittest.TestCase):
                 balrog = get_task_by_name(self.graph, "{}_en-US_{}_funsize_balrog_task".format(p, v))
 
                 self.assertIsNone(generator["task"].get("scopes"))
-                self.assertItemsEqual(signing["task"]["scopes"], ["signing:cert:release-signing", "signing:format:mar", "signing:format:gpg"])
+                self.assertItemsEqual(
+                    signing["task"]["scopes"],
+                    ["project:releng:signing:cert:release-signing",
+                     "project:releng:signing:format:mar",
+                     "project:releng:signing:format:gpg"])
                 self.assertItemsEqual(balrog["task"]["scopes"], ["docker-worker:feature:balrogVPNProxy"])
 
     def test_funsize_en_US_scopes_dep_signing(self):
         expected_scopes = set([
             "queue:*", "docker-worker:*", "scheduler:*",
-            "signing:format:gpg", "signing:format:mar",
-            "signing:cert:release-signing",
+            "project:releng:signing:format:gpg", "project:releng:signing:format:mar",
+            "project:releng:signing:cert:release-signing",
         ])
         self.assertTrue(expected_scopes.issubset(self.graph["scopes"]))
 
@@ -105,7 +115,10 @@ class TestEnUSPartials(unittest.TestCase):
                 balrog = get_task_by_name(self.graph, "{}_en-US_{}_funsize_balrog_task".format(p, v))
 
                 self.assertIsNone(generator["task"].get("scopes"))
-                self.assertItemsEqual(signing["task"]["scopes"], ["signing:cert:release-signing", "signing:format:mar", "signing:format:gpg"])
+                self.assertItemsEqual(signing["task"]["scopes"],
+                                      ["project:releng:signing:cert:release-signing",
+                                       "project:releng:signing:format:mar",
+                                       "project:releng:signing:format:gpg"])
                 self.assertIsNotNone(balrog["task"].get("scopes"))
                 self.assertEqual(
                     signing["task"]["payload"]["signingManifest"],

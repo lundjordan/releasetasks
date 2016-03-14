@@ -1,7 +1,8 @@
 import unittest
 
-from releasetasks.test import do_common_assertions, PVT_KEY_FILE, \
-    get_task_by_name, make_task_graph
+from releasetasks.test.firefox import do_common_assertions, get_task_by_name, \
+    make_task_graph
+from releasetasks.test import PVT_KEY_FILE
 
 
 class TestSourceBuilder(unittest.TestCase):
@@ -19,6 +20,7 @@ class TestSourceBuilder(unittest.TestCase):
             appVersion="42.0",
             buildNumber=3,
             source_enabled=True,
+            checksums_enabled=False,
             en_US_config={"platforms": {
                 "linux": {"task_id": "xyz"},
                 "win32": {"task_id": "xyy"}
@@ -26,14 +28,18 @@ class TestSourceBuilder(unittest.TestCase):
             l10n_config={},
             repo_path="releases/foo",
             revision="fedcba654321",
+            mozharness_changeset="abcd",
             branch="foo",
             updates_enabled=False,
             bouncer_enabled=False,
             push_to_candidates_enabled=False,
+            beetmover_candidates_bucket='mozilla-releng-beet-mover-dev',
+            push_to_releases_enabled=False,
             postrelease_version_bump_enabled=False,
             signing_class="release-signing",
             verifyConfigs={},
             signing_pvt_key=PVT_KEY_FILE,
+            build_tools_repo_path='build/tools',
         )
         self.task_def = get_task_by_name(self.graph, "foo_source")
         self.task = self.task_def["task"]
@@ -77,8 +83,8 @@ class TestSourceBuilder(unittest.TestCase):
             "queue:create-task:aws-provisioner-v1/build-c4-2xlarge",
             "docker-worker:cache:build-foo-release-workspace",
             "docker-worker:cache:tooltool-cache",
-            "signing:format:gpg",
-            "signing:cert:release-signing",
+            "project:releng:signing:format:gpg",
+            "project:releng:signing:cert:release-signing",
             "docker-worker:relengapi-proxy:tooltool.download.public"
         ])
         assert expected_graph_scopes.issubset(self.graph["scopes"])
@@ -108,8 +114,8 @@ class TestSourceBuilder(unittest.TestCase):
 
     def test_signing_task_scopes(self):
         expected_task_scopes = set([
-            "signing:format:gpg",
-            "signing:cert:release-signing"
+            "project:releng:signing:format:gpg",
+            "project:releng:signing:cert:release-signing"
         ])
         assert expected_task_scopes.issubset(self.signing_task["scopes"])
 

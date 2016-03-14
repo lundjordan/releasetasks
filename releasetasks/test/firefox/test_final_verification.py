@@ -1,7 +1,8 @@
 import unittest
 
-from releasetasks.test import make_task_graph, PVT_KEY_FILE, \
-    do_common_assertions, get_task_by_name
+from releasetasks.test.firefox import make_task_graph, do_common_assertions, \
+    get_task_by_name
+from releasetasks.test import PVT_KEY_FILE
 
 
 class TestFinalVerification(unittest.TestCase):
@@ -18,6 +19,7 @@ class TestFinalVerification(unittest.TestCase):
             appVersion="42.0",
             buildNumber=3,
             source_enabled=False,
+            checksums_enabled=False,
             en_US_config={
                 "platforms": {
                     "macosx64": {},
@@ -38,17 +40,23 @@ class TestFinalVerification(unittest.TestCase):
             l10n_config={},
             repo_path="releases/foo",
             revision="fedcba654321",
+            mozharness_changeset="abcd",
             branch="foo",
             updates_enabled=False,
             bouncer_enabled=False,
             push_to_candidates_enabled=False,
+            push_to_releases_enabled=True,
+            push_to_releases_automatic=False,
+            beetmover_candidates_bucket='fake_bucket',
             postrelease_version_bump_enabled=False,
             product="firefox",
             signing_class="release-signing",
             release_channels=["foo"],
-            balrog_api_root="http://balrog/api",
+            balrog_api_root="https://balrog.real/api",
+            funsize_balrog_api_root="http://balrog/api",
             enUS_platforms=["linux", "linux64", "win64", "win32", "macosx64"],
             signing_pvt_key=PVT_KEY_FILE,
+            build_tools_repo_path='build/tools',
         )
         self.task_def = get_task_by_name(self.graph, "foo_final_verify")
         self.task = self.task_def["task"]
@@ -89,6 +97,10 @@ class TestFinalVerification(unittest.TestCase):
         ])
         self.assertTrue(expected_graph_scopes.issubset(self.graph["scopes"]))
 
+    def test_requires(self):
+        requires = [get_task_by_name(self.graph, "release-foo-firefox_uptake_monitoring")["taskId"]]
+        self.assertEqual(sorted(self.task_def["requires"]), sorted(requires))
+
 
 class TestFinalVerificationMultiChannel(unittest.TestCase):
     maxDiff = 30000
@@ -121,16 +133,23 @@ class TestFinalVerificationMultiChannel(unittest.TestCase):
             l10n_config={},
             repo_path="releases/foo",
             revision="fedcba654321",
+            mozharness_changeset="abcd",
             branch="foo",
             updates_enabled=False,
+            checksums_enabled=False,
             bouncer_enabled=False,
             push_to_candidates_enabled=False,
+            push_to_releases_enabled=True,
+            push_to_releases_automatic=False,
+            beetmover_candidates_bucket='fake_bucket',
             postrelease_version_bump_enabled=False,
             product="firefox",
             signing_class="release-signing",
             release_channels=["beta", "release"],
-            balrog_api_root="http://balrog/api",
+            balrog_api_root="https://balrog.real/api",
+            funsize_balrog_api_root="http://balrog/api",
             signing_pvt_key=PVT_KEY_FILE,
+            build_tools_repo_path='build/tools',
         )
 
     def test_common_assertions(self):

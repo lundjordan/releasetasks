@@ -1,8 +1,8 @@
 import unittest
 
-from releasetasks.test import make_task_graph, PVT_KEY_FILE, \
-    get_task_by_name, \
+from releasetasks.test.firefox import make_task_graph, get_task_by_name, \
     do_common_assertions
+from releasetasks.test import PVT_KEY_FILE
 
 
 class TestL10NSingleChunk(unittest.TestCase):
@@ -19,9 +19,11 @@ class TestL10NSingleChunk(unittest.TestCase):
             appVersion="42.0",
             buildNumber=3,
             source_enabled=False,
+            checksums_enabled=False,
             updates_enabled=True,
             bouncer_enabled=False,
             push_to_candidates_enabled=False,
+            push_to_releases_enabled=False,
             postrelease_version_bump_enabled=False,
             en_US_config={"platforms": {
                 "win32": {"task_id": "xyy"}
@@ -54,14 +56,17 @@ class TestL10NSingleChunk(unittest.TestCase):
                     "buildNumber": 2,
                 },
             },
-            balrog_api_root="https://fake.balrog/api",
+            balrog_api_root="https://balrog.real/api",
+            funsize_balrog_api_root="http://balrog/api",
             signing_class="release-signing",
             branch="mozilla-beta",
             product="firefox",
             repo_path="releases/mozilla-beta",
             revision="abcdef123456",
+            mozharness_changeset="abcd",
             release_channels=["beta"],
             signing_pvt_key=PVT_KEY_FILE,
+            build_tools_repo_path='build/tools',
         )
         self.task = get_task_by_name(self.graph, "release-mozilla-beta_firefox_win32_l10n_repack_1")
         self.payload = self.task["task"]["payload"]
@@ -85,7 +90,7 @@ class TestL10NSingleChunk(unittest.TestCase):
 
     def test_script_repo_revision(self):
         self.assertEqual(self.payload["properties"]["script_repo_revision"],
-                         "abcdef123456")
+                         "abcd")
 
     def test_buildername(self):
         self.assertEqual(self.payload["buildername"], "release-mozilla-beta_firefox_win32_l10n_repack")
@@ -143,9 +148,11 @@ class TestL10NMultipleChunks(unittest.TestCase):
             appVersion="42.0",
             buildNumber=3,
             source_enabled=False,
+            checksums_enabled=False,
             updates_enabled=True,
             bouncer_enabled=False,
             push_to_candidates_enabled=False,
+            push_to_releases_enabled=False,
             postrelease_version_bump_enabled=False,
             enUS_platforms=["win32"],
             en_US_config={"platforms": {
@@ -181,13 +188,16 @@ class TestL10NMultipleChunks(unittest.TestCase):
                 },
             },
             signing_class="release-signing",
-            balrog_api_root="https://fake.balrog/api",
+            balrog_api_root="https://balrog.real/api",
+            funsize_balrog_api_root="http://balrog/api",
             branch="mozilla-beta",
             product="firefox",
             repo_path="releases/mozilla-beta",
             revision="abcdef123456",
+            mozharness_changeset="abcd",
             release_channels=["beta"],
             signing_pvt_key=PVT_KEY_FILE,
+            build_tools_repo_path='build/tools',
         )
         self.chunk1 = get_task_by_name(
             self.graph, "release-mozilla-beta_firefox_win32_l10n_repack_1")
@@ -233,7 +243,7 @@ class TestL10NMultipleChunks(unittest.TestCase):
 
     def test_chunk1_script_repo_revision(self):
         self.assertEqual(self.chunk1_properties["script_repo_revision"],
-                         "abcdef123456")
+                         "abcd")
 
     def test_chunk2_repo_path(self):
         self.assertEqual(self.chunk2_properties["repo_path"],
@@ -241,7 +251,7 @@ class TestL10NMultipleChunks(unittest.TestCase):
 
     def test_chunk2_script_repo_revision(self):
         self.assertEqual(self.chunk2_properties["script_repo_revision"],
-                         "abcdef123456")
+                         "abcd")
 
     def test_no_chunk3(self):
         self.assertIsNone(get_task_by_name(

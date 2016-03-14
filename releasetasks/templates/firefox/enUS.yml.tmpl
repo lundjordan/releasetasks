@@ -14,17 +14,21 @@
         expires: "{{ never }}"
         priority: "high"
         retries: 5
+        routes:
+            - tc-treeherder-stage.{{ branch }}.{{ revision_hash }}
+            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.beetmover.en_US.{{ platform }}
+            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.beetmover.en_US.{{ platform }}
         payload:
             maxRunTime: 7200
             # TODO - create specific image for this
-            image: kmoir/python-beet-runner
+            image: "kmoir/python-beet-runner@sha256:4f6dc84c4386406090a9c72b976be03dea647f01fe45a023d63ce0e479eb3497"
             command:
                 - /bin/bash
                 - -c
                 - >
-                  wget -O mozharness.tar.bz2 https://hg.mozilla.org/{{ repo_path }}/archive/{{ revision }}.tar.bz2/testing/mozharness &&
+                  wget -O mozharness.tar.bz2 https://hg.mozilla.org/{{ repo_path }}/archive/{{ mozharness_changeset }}.tar.bz2/testing/mozharness &&
                   mkdir mozharness && tar xvfj mozharness.tar.bz2 -C mozharness --strip-components 3 && cd mozharness &&
-                  python scripts/release/beet_mover.py --template configs/beetmover/en_us.yml.tmpl --platform {{ buildbot2ftp(platform) }} --version {{ version }} --app-version {{ appVersion }} --locale en-US --taskid {{ platform_info['task_id'] }} --build-num build{{ buildNumber }}
+                  python scripts/release/beet_mover.py --template configs/beetmover/en_us.yml.tmpl --platform {{ buildbot2ftp(platform) }} --version {{ version }} --app-version {{ appVersion }} --locale en-US --taskid {{ platform_info['task_id'] }} --build-num build{{ buildNumber }} --bucket {{ beetmover_candidates_bucket }}
             env:
                 DUMMY_ENV_FOR_ENCRYPT: "fake"
             encryptedEnv:
@@ -44,6 +48,13 @@
             {% if running_tests is defined %}
             task_name: "{{ complete_beetmover_basename }}"
             {% endif %}
+            build_props:
+                locales: ["en-US"]
+                branch: {{ branch }}
+                platform: {{ platform }}
+                version: "{{ version }}"
+                revision: {{ revision }}
+
             signing:
                signature: {{ sign_task(stableSlugId(complete_beetmover_basename), valid_for=4 * 24 * 3600) }}
 
@@ -88,8 +99,8 @@
 
         routes:
             - tc-treeherder-stage.{{ branch }}.{{ revision_hash }}
-            - index.funsize.v1.{{ branch }}.revision.{{ platform }}.{{ revision }}.{{ locale }}.{{ partial_version }}.updates
-            - index.funsize.v1.{{ branch }}.latest.{{ platform }}.{{ locale }}.{{ partial_version }}.updates
+            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.partials.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
+            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.partials.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
         extra:
             {% if running_tests is defined %}
             task_name: "{{ '{}_update_generator'.format(funsize_basename) }}"
@@ -106,9 +117,9 @@
                         to_mar: "https://queue.taskcluster.net/v1/task/{{ en_US_config["platforms"][platform]["task_id"] }}/artifacts/public/build/{{ product }}-{{ appVersion }}.{{ locale }}.{{ buildbot2ftp(platform) }}.complete.mar"
                         platform: {{ platform }}
                         branch: {{ branch }}
-                        previousVersion: {{ partial_version }}
+                        previousVersion: "{{ partial_version }}"
                         previousBuildNumber: {{ partial_info["buildNumber"] }}
-                        toVersion: {{ version }}
+                        toVersion: "{{ version }}"
                         toBuildNumber: {{ buildNumber }}
             treeherderEnv:
                 - staging
@@ -129,8 +140,8 @@
             createdForUser: release+funsize@mozilla.com
 
         payload:
-            image: "rail/funsize-update-generator:latest"
-            maxRunTime: 900
+            image: "rail/funsize-update-generator@sha256:ce45316c7a7dede6fc74f0fc7259a34d1616c2e207dbd036225454bbbb8e3d32"
+            maxRunTime: 3600
             command:
                 - /runme.sh
 
@@ -141,6 +152,10 @@
                 SIGNING_CERT: "dep"
                 {% else %}
                 SIGNING_CERT: "release"
+                {% endif %}
+                {% if branch == "mozilla-beta" %}
+                # explicitly set MAR channel name, ACCEPTED_MAR_CHANNEL_IDS is the corresponding variable in funsize.py
+                ACCEPTED_MAR_CHANNEL_IDS: firefox-mozilla-beta
                 {% endif %}
 
             artifacts:
@@ -167,8 +182,8 @@
 
         routes:
             - tc-treeherder-stage.{{ branch }}.{{ revision_hash }}
-            - index.funsize.v1.{{ branch }}.revision.{{ platform }}.{{ revision }}.{{ locale }}.{{ partial_version }}.signing
-            - index.funsize.v1.{{ branch }}.latest.{{ platform }}.{{ locale }}.{{ partial_version }}.signing
+            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.partials_signing.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
+            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.partials_signing.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
         extra:
             signing:
                # assert that this signing task was created by the real releaserunner
@@ -193,9 +208,9 @@
         workerType: "signing-worker-v1"
         provisionerId: "signing-provisioner-v1"
         scopes:
-            - signing:cert:{{ signing_class }}
-            - signing:format:gpg
-            - signing:format:mar
+            - project:releng:signing:cert:{{ signing_class }}
+            - project:releng:signing:format:gpg
+            - project:releng:signing:format:mar
         tags:
             createdForUser: release+funsize@mozilla.com
 
@@ -213,8 +228,8 @@
         priority: "high"
         routes:
             - tc-treeherder-stage.{{ branch }}.{{ revision_hash }}
-            - index.funsize.v1.{{ branch }}.revision.{{ platform }}.{{ revision }}.{{ locale }}.{{ partial_version }}.balrog
-            - index.funsize.v1.{{ branch }}.latest.{{ platform }}.{{ locale }}.{{ partial_version }}.balrog
+            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.partials_balrog.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
+            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.partials_balrog.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
         extra:
             {% if running_tests is defined %}
             task_name: "{{ '{}_balrog_task'.format(funsize_basename) }}"
@@ -250,11 +265,16 @@
             createdForUser: release+funsize@mozilla.com
 
         payload:
-            image: "rail/funsize-balrog-submitter:latest"
+            image: "rail/funsize-balrog-submitter@sha256:e8788f0e0e64813cfdfd720e2fab9c32a5c6ea76e27bc0270d40e6e13f0b074b"
             maxRunTime: 1800
             command:
                 - /runme.sh
 
+            artifacts:
+                "public/env":
+                    path: /home/worker/artifacts/
+                    type: directory
+                    expires: "{{ never }}"
             env:
                 {% if signing_class == "dep-signing" %}
                 MOZ_DISABLE_MAR_CERT_VERIFICATION: true
@@ -263,7 +283,7 @@
                 SIGNING_CERT: "release"
                 {% endif %}
                 PARENT_TASK_ARTIFACTS_URL_PREFIX: "https://queue.taskcluster.net/v1/task/{{ stableSlugId('{}_signing_task'.format(funsize_basename)) }}/artifacts/public/env"
-                BALROG_API_ROOT: {{ balrog_api_root }}
+                BALROG_API_ROOT: {{ funsize_balrog_api_root }}
                 # TODO: should funsize be publishing to an s3 bucket? or will beetmover do that?
                 {% if extra_balrog_submitter_params is defined %}
                 EXTRA_BALROG_SUBMITTER_PARAMS: "{{ extra_balrog_submitter_params }}"
@@ -296,17 +316,21 @@
         expires: "{{ never }}"
         priority: "high"
         retries: 5
+        routes:
+            - tc-treeherder-stage.{{ branch }}.{{ revision_hash }}
+            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.partials_beetmover.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
+            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.partials_beetmover.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
         payload:
             maxRunTime: 7200
             # TODO - create specific image for this
-            image: kmoir/python-beet-runner
+            image: "kmoir/python-beet-runner@sha256:4f6dc84c4386406090a9c72b976be03dea647f01fe45a023d63ce0e479eb3497"
             command:
                 - /bin/bash
                 - -c
                 - >
-                  wget -O mozharness.tar.bz2 https://hg.mozilla.org/{{ repo_path }}/archive/{{ revision }}.tar.bz2/testing/mozharness &&
+                  wget -O mozharness.tar.bz2 https://hg.mozilla.org/{{ repo_path }}/archive/{{ mozharness_changeset }}.tar.bz2/testing/mozharness &&
                   mkdir mozharness && tar xvfj mozharness.tar.bz2 -C mozharness --strip-components 3 && cd mozharness &&
-                  python scripts/release/beet_mover.py --template configs/beetmover/partials.yml.tmpl --platform {{ buildbot2ftp(platform) }} --version {{ version }} --partial-version {{ partial_version }} --artifact-subdir env --locale en-US --taskid {{ stableSlugId('{}_signing_task'.format(funsize_basename)) }} --build-num build{{ buildNumber }}
+                  python scripts/release/beet_mover.py --template configs/beetmover/partials.yml.tmpl --platform {{ buildbot2ftp(platform) }} --version {{ version }} --partial-version {{ partial_version }} --artifact-subdir env --locale en-US --taskid {{ stableSlugId('{}_signing_task'.format(funsize_basename)) }} --build-num build{{ buildNumber }} --bucket {{ beetmover_candidates_bucket }}
             env:
                 DUMMY_ENV_FOR_ENCRYPT: "fake"
             encryptedEnv:

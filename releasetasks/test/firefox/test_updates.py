@@ -1,7 +1,8 @@
 import unittest
 
-from releasetasks.test import make_task_graph, PVT_KEY_FILE, \
-    do_common_assertions, get_task_by_name
+from releasetasks.test.firefox import make_task_graph, do_common_assertions, \
+    get_task_by_name
+from releasetasks.test import PVT_KEY_FILE
 
 
 class TestUpdates(unittest.TestCase):
@@ -17,6 +18,7 @@ class TestUpdates(unittest.TestCase):
             appVersion="42.0",
             buildNumber=3,
             source_enabled=False,
+            checksums_enabled=False,
             en_US_config={
                 "platforms": {
                     "macosx64": {"task_id": "abc"},
@@ -30,6 +32,7 @@ class TestUpdates(unittest.TestCase):
             repo_path="releases/foo",
             product="firefox",
             revision="fedcba654321",
+            mozharness_changeset="abcd",
             partial_updates={
                 "38.0": {
                     "buildNumber": 1,
@@ -42,11 +45,15 @@ class TestUpdates(unittest.TestCase):
             updates_enabled=True,
             bouncer_enabled=True,
             push_to_candidates_enabled=True,
+            beetmover_candidates_bucket='mozilla-releng-beet-mover-dev',
+            push_to_releases_enabled=False,
             postrelease_version_bump_enabled=True,
             signing_class="release-signing",
             release_channels=["foo", "bar"],
-            balrog_api_root="http://balrog/api",
+            balrog_api_root="https://balrog.real/api",
+            funsize_balrog_api_root="http://balrog/api",
             signing_pvt_key=PVT_KEY_FILE,
+            build_tools_repo_path='build/tools',
         )
         self.task = get_task_by_name(
             self.graph, "release-foo-firefox_updates")
@@ -80,14 +87,14 @@ class TestUpdates(unittest.TestCase):
         self.assertEqual(self.props["repo_path"], "releases/foo")
 
     def test_script_repo_revision(self):
-        self.assertEqual(self.props["script_repo_revision"], "fedcba654321")
+        self.assertEqual(self.props["script_repo_revision"], "abcd")
 
     def test_partials(self):
         self.assertEqual(self.props["partial_versions"],
                          "37.0build2, 38.0build1")
 
     def test_balrog(self):
-        self.assertEqual(self.props["balrog_api_root"], "http://balrog/api")
+        self.assertEqual(self.props["balrog_api_root"], "https://balrog.real/api")
 
     def test_platforms(self):
         self.assertEqual(self.props["platforms"],

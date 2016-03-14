@@ -1,7 +1,8 @@
 import unittest
 
-from releasetasks.test import make_task_graph, PVT_KEY_FILE, \
-    do_common_assertions, get_task_by_name
+from releasetasks.test.firefox import make_task_graph, do_common_assertions, \
+    get_task_by_name
+from releasetasks.test import PVT_KEY_FILE
 from release.platforms import buildbot2ftp
 
 
@@ -60,9 +61,12 @@ class TestBeetmoverEnUSCandidates(unittest.TestCase, BaseTestBeetmoverCandidates
             appVersion="42.0",
             buildNumber=3,
             source_enabled=False,
+            checksums_enabled=False,
             updates_enabled=False,
             bouncer_enabled=False,
             push_to_candidates_enabled=True,
+            beetmover_candidates_bucket='mozilla-releng-beet-mover-dev',
+            push_to_releases_enabled=False,
             postrelease_version_bump_enabled=False,
             en_US_config=self.en_US_config,
             l10n_config={},
@@ -78,10 +82,13 @@ class TestBeetmoverEnUSCandidates(unittest.TestCase, BaseTestBeetmoverCandidates
             repo_path="releases/mozilla-beta",
             product="firefox",
             revision="abcdef123456",
-            balrog_api_root="https://fake.balrog/api",
+            mozharness_changeset="abcd",
+            balrog_api_root="https://balrog.real/api",
+            funsize_balrog_api_root="http://balrog/api",
             signing_class="release-signing",
             verifyConfigs={},
             signing_pvt_key=PVT_KEY_FILE,
+            build_tools_repo_path='build/tools',
         )
         self.tasks = {
             'win32': get_task_by_name(
@@ -111,6 +118,20 @@ class TestBeetmoverEnUSCandidates(unittest.TestCase, BaseTestBeetmoverCandidates
             en_US_taskid = self.en_US_config['platforms'][platform]['task_id']
             command = task['task']['payload']['command']
             self.assertTrue("--taskid {}".format(en_US_taskid) in "".join(command))
+
+    def test_bucket_in_command(self):
+        for platform, task in self.tasks.iteritems():
+            command = task['task']['payload']['command']
+            self.assertTrue("--bucket {}".format("mozilla-releng-beet-mover-dev") in "".join(command))
+
+    def test_extra_build_props(self):
+        for platform, task in self.tasks.iteritems():
+            build_props = task['task']['extra']['build_props']
+            self.assertEqual(build_props["locales"], ["en-US"])
+            self.assertEqual(build_props["branch"], "mozilla-beta")
+            self.assertTrue("platform" in build_props)
+            self.assertEqual(build_props["version"], "42.0b2")
+            self.assertEqual(build_props["revision"], "abcdef123456")
 
 
 class TestBeetmover110nCandidates(unittest.TestCase, BaseTestBeetmoverCandidates):
@@ -152,9 +173,12 @@ class TestBeetmover110nCandidates(unittest.TestCase, BaseTestBeetmoverCandidates
             appVersion="42.0",
             buildNumber=3,
             source_enabled=False,
+            checksums_enabled=False,
             updates_enabled=False,
             bouncer_enabled=False,
             push_to_candidates_enabled=True,
+            beetmover_candidates_bucket='mozilla-releng-beet-mover-dev',
+            push_to_releases_enabled=False,
             postrelease_version_bump_enabled=False,
             en_US_config=self.en_US_config,
             l10n_config=self.l10n_config,
@@ -166,14 +190,17 @@ class TestBeetmover110nCandidates(unittest.TestCase, BaseTestBeetmoverCandidates
                     "buildNumber": 2,
                 },
             },
-            balrog_api_root="https://fake.balrog/api",
+            balrog_api_root="https://balrog.real/api",
+            funsize_balrog_api_root="http://balrog/api",
             signing_class="release-signing",
             branch="mozilla-beta",
             product="firefox",
             repo_path="releases/mozilla-beta",
             revision="abcdef123456",
+            mozharness_changeset="abcd",
             release_channels=["beta"],
             signing_pvt_key=PVT_KEY_FILE,
+            build_tools_repo_path='build/tools',
         )
         self.tasks = {
             'win32': get_task_by_name(
@@ -198,6 +225,11 @@ class TestBeetmover110nCandidates(unittest.TestCase, BaseTestBeetmoverCandidates
             command = task['task']['payload']['command']
             self.assertTrue("--locale de --locale en-GB --locale zh-TW" in "".join(command))
 
+    def test_bucket_in_command(self):
+        for platform, task in self.tasks.iteritems():
+            command = task['task']['payload']['command']
+            self.assertTrue("--bucket {}".format("mozilla-releng-beet-mover-dev") in "".join(command))
+
     def test_taskid_in_command(self):
         for platform, task in self.tasks.iteritems():
             l10n_artifact_task = get_task_by_name(
@@ -206,6 +238,15 @@ class TestBeetmover110nCandidates(unittest.TestCase, BaseTestBeetmoverCandidates
             )
             command = task['task']['payload']['command']
             self.assertTrue("--taskid {}".format(l10n_artifact_task['taskId']) in "".join(command))
+
+    def test_extra_build_props(self):
+        for platform, task in self.tasks.iteritems():
+            build_props = task['task']['extra']['build_props']
+            self.assertEqual(build_props["locales"], ["de", "en-GB", "zh-TW"])
+            self.assertEqual(build_props["branch"], "mozilla-beta")
+            self.assertTrue("platform" in build_props)
+            self.assertEqual(build_props["version"], "42.0b2")
+            self.assertEqual(build_props["revision"], "abcdef123456")
 
 
 class TestBeetmoverEnUSPartialsCandidates(unittest.TestCase, BaseTestBeetmoverCandidates):
@@ -227,9 +268,12 @@ class TestBeetmoverEnUSPartialsCandidates(unittest.TestCase, BaseTestBeetmoverCa
             appVersion="42.0",
             buildNumber=3,
             source_enabled=False,
+            checksums_enabled=False,
             updates_enabled=True,
             bouncer_enabled=False,
             push_to_candidates_enabled=True,
+            beetmover_candidates_bucket='mozilla-releng-beet-mover-dev',
+            push_to_releases_enabled=False,
             postrelease_version_bump_enabled=False,
             en_US_config=self.en_US_config,
             l10n_config={},
@@ -245,10 +289,13 @@ class TestBeetmoverEnUSPartialsCandidates(unittest.TestCase, BaseTestBeetmoverCa
             repo_path="releases/mozilla-beta",
             product="firefox",
             revision="abcdef123456",
-            balrog_api_root="https://fake.balrog/api",
+            mozharness_changeset="abcd",
+            balrog_api_root="https://balrog.real/api",
+            funsize_balrog_api_root="http://balrog/api",
             signing_class="release-signing",
             verifyConfigs={},
             signing_pvt_key=PVT_KEY_FILE,
+            build_tools_repo_path='build/tools',
         )
         self.tasks = {
             'win32': get_task_by_name(
@@ -326,9 +373,12 @@ class TestBeetmoverl10nPartialsCandidates(unittest.TestCase, BaseTestBeetmoverCa
             appVersion="42.0",
             buildNumber=3,
             source_enabled=False,
+            checksums_enabled=False,
             updates_enabled=True,
             bouncer_enabled=False,
             push_to_candidates_enabled=True,
+            beetmover_candidates_bucket='mozilla-releng-beet-mover-dev',
+            push_to_releases_enabled=False,
             postrelease_version_bump_enabled=False,
             en_US_config=self.en_US_config,
             l10n_config=self.l10n_config,
@@ -340,14 +390,17 @@ class TestBeetmoverl10nPartialsCandidates(unittest.TestCase, BaseTestBeetmoverCa
                     "buildNumber": 2,
                 },
             },
-            balrog_api_root="https://fake.balrog/api",
+            balrog_api_root="https://balrog.real/api",
+            funsize_balrog_api_root="http://balrog/api",
             signing_class="release-signing",
             branch="mozilla-beta",
             product="firefox",
             repo_path="releases/mozilla-beta",
             revision="abcdef123456",
+            mozharness_changeset="abcd",
             release_channels=["beta"],
             signing_pvt_key=PVT_KEY_FILE,
+            build_tools_repo_path='build/tools',
         )
         self.tasks = {
             'win32': get_task_by_name(

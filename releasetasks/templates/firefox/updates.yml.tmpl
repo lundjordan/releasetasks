@@ -16,21 +16,25 @@
         retries: 5
         scopes:
             - project:releng:buildbot-bridge:builder-name:{{ buildername }}
+        routes:
+            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.updates
+            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.updates
 
         payload:
             buildername: "{{ buildername }}"
             sourcestamp:
                 branch: "{{ repo_path }}"
-                revision: "{{ revision }}"
+                revision: "{{ mozharness_changeset }}"
             properties:
                 product: "{{ product }}"
                 version: "{{ version }}"
                 appVersion: "{{ appVersion }}"
                 build_number: {{ buildNumber }}
                 repo_path: "{{ repo_path }}"
-                script_repo_revision: "{{ revision }}"
+                # TODO is this used?
+                script_repo_revision: "{{ mozharness_changeset }}"
                 release_promotion: true
-                revision: "{{ revision }}"
+                revision: "{{ mozharness_changeset }}"
                 partial_versions: {% set pipe = joiner(", ") %}{% for p, e in sorted(partial_updates.items()) %}{{ pipe() }}{{ "{}build{}".format(p, e["buildNumber"]) }}{% endfor %}
                 balrog_api_root: {{ balrog_api_root }}
                 platforms: {{ en_US_config["platforms"] | sort() | join(", ") }}

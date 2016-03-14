@@ -2,6 +2,9 @@
 {% set buildername = "{}_final_verify".format(channel) %}
 -
     taskId: "{{ stableSlugId(buildername) }}"
+    requires:
+        # tests will catch if this buildername changes
+        - {{ stableSlugId("release-{}-{}_uptake_monitoring".format(branch, product)) }}
     reruns: 5
     task:
         provisionerId: aws-provisioner-v1
@@ -11,15 +14,21 @@
         expires: "{{ never }}"
         priority: "high"
         retries: 5
+        routes:
+            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.finale_verify
+            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.final_verify
         payload:
             maxRunTime: 7200
-            image: rail/python-test-runner
+            image: "rail/python-test-runner@sha256:450b126cab40b9c105cf260733423cbc47480442c86efdcb387a67efba00d698"
             command:
                 - /bin/bash
                 - -c
-                - hg clone https://hg.mozilla.org/build/tools && cd tools && hg up -r $TAG && cd release/ && ./final-verification.sh $RELEASE_CONFIGS
+                - hg clone https://hg.mozilla.org/{{ build_tools_repo_path }} tools && cd tools && hg up -r $TAG && cd release/ && ./final-verification.sh $RELEASE_CONFIGS
             env:
-                TAG: "default"
+                TAG: "{{ "{product}_{version}_BUILD{buildNumber}_RUNTIME".format(
+                    product=product.upper(),
+                    version=version.replace('.', '_'),
+                    buildNumber=buildNumber ) }}"
                 RELEASE_CONFIGS: {#
                     #}{% for platform in en_US_config["platforms"].keys() %}{#
                         #}{{ "{channel}-{product}-{platform}.cfg".format(
