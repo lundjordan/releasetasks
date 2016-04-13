@@ -101,14 +101,14 @@ tasks:
       {{ checksums_tasks()|indent(4) }}
     {% endif %}
 
-    {% if updates_builder_enabled %}
+    {% if updates_builder_enabled is defined and updates_builder_enabled %}
         {% macro updates_task() %}
             {% include "updates.yml.tmpl" %}
         {% endmacro %}
         {{ updates_task()|indent(4) }}
     {% endif %}
 
-    {% if update_verify_enabled %}
+    {% if update_verify_enabled is defined and update_verify_enabled %}
         {% macro updateVerify_task(platform) %}
             {% if platform in ["linux", "linux64"] %}
                 {% include "tc_update_verify.yml.tmpl" %}
@@ -135,7 +135,7 @@ tasks:
 
     {% endif %}
 
-    {% if final_verify_channels is defined %}
+    {% if final_verify_channels is defined and final_verify_platforms is defined %}
         {% macro finalVerify_tasks() %}
             {% include "final_verify.yml.tmpl" %}
         {% endmacro %}
