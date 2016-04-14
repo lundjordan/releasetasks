@@ -16,10 +16,12 @@
 {% if not push_to_releases_automatic %}
 -
     taskId: "{{ stableSlugId('{}_human_decision'.format(push_to_releases_basename)) }}"
+    {% if push_to_releases_human_upstream_builders %}
     requires:
         {% for upstream_builder in push_to_releases_human_upstream_builders %}
         - {{ stableSlugId(upstream_builder) }}
         {% endfor %}
+    {% endif %}
     reruns: 5
     task:
         provisionerId: "null-provisioner"
@@ -47,10 +49,12 @@
 
 -
     taskId: "{{ stableSlugId(push_to_releases_basename) }}"
+    {% if push_to_releases_upstream_builders %}
     requires:
         {% for upstream_builder in push_to_releases_upstream_builders %}
         - {{ stableSlugId(upstream_builder) }}
         {% endfor %}
+    {% endif %}
     reruns: 5
     task:
         provisionerId: aws-provisioner-v1
