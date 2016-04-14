@@ -1,5 +1,5 @@
 # we don't want to do any en-US, l10n, or parter based tasks for graph 2
-platforms: []
+platforms: {}
 release_platforms: []
 final_verify_platforms:
   - "linux"
