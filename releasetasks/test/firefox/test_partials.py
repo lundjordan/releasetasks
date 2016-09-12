@@ -22,6 +22,7 @@ class TestEnUSPartials(unittest.TestCase):
             push_to_releases_enabled=False,
             uptake_monitoring_enabled=False,
             postrelease_version_bump_enabled=False,
+            postrelease_mark_as_shipped_enabled=False,
             postrelease_bouncer_aliases_enabled=False,
             en_US_config={"platforms": {
                 "macosx64": {"task_id": "xyz"},
@@ -51,6 +52,7 @@ class TestEnUSPartials(unittest.TestCase):
             final_verify_channels=["beta"],
             signing_pvt_key=PVT_KEY_FILE,
             build_tools_repo_path='build/tools',
+            publish_to_balrog_channels=None,
         )
 
     def test_common_assertions(self):

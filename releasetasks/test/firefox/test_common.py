@@ -54,6 +54,7 @@ class TestEncryption(unittest.TestCase):
             push_to_releases_enabled=False,
             uptake_monitoring_enabled=False,
             postrelease_version_bump_enabled=False,
+            postrelease_mark_as_shipped_enabled=False,
             postrelease_bouncer_aliases_enabled=False,
             en_US_config={"platforms": {
                 "macosx64": {"task_id": "xyz"},
@@ -82,6 +83,7 @@ class TestEncryption(unittest.TestCase):
             signing_pvt_key=PVT_KEY_FILE,
             repo_path="foo/bar",
             build_tools_repo_path='build/tools',
+            publish_to_balrog_channels=None,
         )
         do_common_assertions(graph)
         for p in ("win32", "macosx64"):
@@ -106,6 +108,7 @@ class TestGraphScopes(unittest.TestCase):
             buildNumber=3,
             branch="foo",
             revision="abcdef123456",
+            repo_path="foo/bar",
             mozharness_changeset="abcd",
             updates_enabled=False,
             bouncer_enabled=False,
@@ -115,6 +118,7 @@ class TestGraphScopes(unittest.TestCase):
             push_to_releases_enabled=False,
             uptake_monitoring_enabled=False,
             postrelease_version_bump_enabled=False,
+            postrelease_mark_as_shipped_enabled=False,
             postrelease_bouncer_aliases_enabled=False,
             en_US_config={"platforms": {
                 "linux": {"task_id": "xyz"},
@@ -124,6 +128,7 @@ class TestGraphScopes(unittest.TestCase):
             verifyConfigs={},
             signing_pvt_key=PVT_KEY_FILE,
             signing_class="release-signing",
+            publish_to_balrog_channels=None,
         )
 
     def test_common_assertions(self):

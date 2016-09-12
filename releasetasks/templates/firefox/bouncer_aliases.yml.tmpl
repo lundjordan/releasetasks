@@ -3,7 +3,7 @@
 -
     taskId: "{{ stableSlugId(buildername) }}"
     requires:
-        - "{{ stableSlugId('post_release_human_decision') }}"
+        - "{{ stableSlugId('publish_release_human_decision') }}"
     reruns: 5
     task:
         provisionerId: "buildbot-bridge"
@@ -40,4 +40,5 @@
             source: https://github.com/mozilla/releasetasks
 
         extra:
+            {{ task_notifications("{} {} bouncer aliases".format(product, branch), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12) }}
             {{ common_extras(taskname=buildername, locales=["null"], platform="null") | indent(12)}}

@@ -7,6 +7,12 @@ final_verify_platforms:
   - "win32"
   - "win64"
   - "macosx64"
+uptake_monitoring_platforms:
+  - "linux"
+  - "linux64"
+  - "win32"
+  - "win64"
+  - "macosx64"
 l10n_release_platforms: []
 partner_repacks_platforms: []
 
@@ -21,11 +27,14 @@ update_verify_enabled: false
 push_to_releases_enabled: true
 # rc graph 2 only needs final_verify_channels
 channels:
+publish_to_balrog_channels:
+    - "release"
 final_verify_channels:
     - "release"
 postrelease_bouncer_aliases_enabled: true
 uptake_monitoring_enabled: true
 postrelease_version_bump_enabled: true
+postrelease_mark_as_shipped_enabled: true
 
 product: "firefox"
 repo_path: "releases/mozilla-release"

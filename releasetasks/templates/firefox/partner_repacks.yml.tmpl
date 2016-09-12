@@ -1,6 +1,7 @@
 {% for platform in partner_repacks_platforms %}
 {% set buildername = "release-{}-{}-{}_partner_repacks".format(branch, product, platform) %}
 {% set buildername_eme_free = "release-{}-{}-{}_eme_free_repacks".format(branch, product, platform) %}
+{% set buildername_sha1 = "release-{}-{}-{}_sha1_repacks".format(branch, product, platform) %}
 -
     taskId: "{{ stableSlugId(buildername) }}"
     reruns: 5
@@ -43,6 +44,8 @@
 
         extra:
             {{ common_extras(taskname=buildername, locales=["null"], platform="null") | indent(12)}}
+            {{ task_notifications("{} {} {} partner repacks".format(product, branch, platform), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12) }}
+
 
 -
     taskId: "{{ stableSlugId(buildername_eme_free) }}"
@@ -86,6 +89,54 @@
 
         extra:
             {{ common_extras(taskname=buildername_eme_free, locales=["null"], platform="null") | indent(12)}}
+            {{ task_notifications("{} {} {} EME-free repacks".format(product, branch, platform), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12) }}
+
+
+-
+    taskId: "{{ stableSlugId(buildername_sha1) }}"
+    reruns: 5
+    requires:
+        {% for upstream_builder in artifact_completes_builders %}
+        - {{ stableSlugId(upstream_builder) }}
+        {% endfor %}
+    task:
+        provisionerId: "buildbot-bridge"
+        workerType: "buildbot-bridge"
+        created: "{{ now }}"
+        deadline: "{{ now.replace(days=4) }}"
+        expires: "{{ never }}"
+        priority: "high"
+        retries: 5
+        scopes:
+            - project:releng:buildbot-bridge:builder-name:{{ buildername }}
+        routes:
+            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.sha1_repacks.{{ platform }}
+            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.sha1_repacks.{{ platform }}
+        payload:
+            buildername: "{{ buildername }}"
+            sourcestamp:
+                branch: "{{ repo_path }}"
+                revision: "{{ mozharness_changeset }}"
+            properties:
+                product: "{{ product }}"
+                version: "{{ version }}"
+                build_number: {{ buildNumber }}
+                repo_path: "{{ repo_path }}"
+                script_repo_revision: "{{ mozharness_changeset }}"
+                release_promotion: true
+                revision: "{{ mozharness_changeset }}"
+                repack_manifests_url: "https://github.com/mozilla-partners/mozilla-sha1-manifest"
+        metadata:
+            name: "{{ product }} {{ branch }} {{ platform }} SHA1 repacks"
+            description: "Release Promotion SHA1 repacks"
+            owner: "release@mozilla.com"
+            source: https://github.com/mozilla/releasetasks
+
+        extra:
+            {{ common_extras(taskname=buildername_sha1, locales=["null"], platform="null") | indent(12)}}
+            {{ task_notifications("{} {} {} SHA1 repacks".format(product, branch, platform), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12) }}
+
+
 
 {% endfor %}
 
@@ -98,6 +149,7 @@
         {% for platform in partner_repacks_platforms %}
         - "{{ stableSlugId("release-{}-{}-{}_partner_repacks".format(branch, product, platform)) }}"
         - "{{ stableSlugId("release-{}-{}-{}_eme_free_repacks".format(branch, product, platform)) }}"
+        - "{{ stableSlugId("release-{}-{}-{}_sha1_repacks".format(branch, product, platform)) }}"
         {% endfor %}
         - "{{ stableSlugId("release-{}_{}_push_to_releases".format(branch, product)) }}"
     reruns: 5
@@ -110,7 +162,8 @@
         priority: "high"
         retries: 5
         routes:
-            - tc-treeherder-stage.{{ branch }}.{{ revision_hash }}
+            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
+            - tc-treeherder.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
             - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.partner_push_to_cdn
             - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.partner_push_to_cdn
         payload:
@@ -130,10 +183,10 @@
                 DUMMY_ENV_FOR_ENCRYPT: "fake"
             encryptedEnv:
                 - {{ encrypt_env_var(stableSlugId(buildername_push), now_ms,
-                                   now_ms + 24 * 3600 * 1000, 'AWS_ACCESS_KEY_ID',
+                                   now_ms + 24 * 4 * 3600 * 1000, 'AWS_ACCESS_KEY_ID',
                                    beetmover_aws_access_key_id) }}
                 - {{ encrypt_env_var(stableSlugId(buildername_push), now_ms,
-                                   now_ms + 24 * 3600 * 1000, 'AWS_SECRET_ACCESS_KEY',
+                                   now_ms + 24 * 4 * 3600 * 1000, 'AWS_SECRET_ACCESS_KEY',
                                    beetmover_aws_secret_access_key) }}
         metadata:
             name: "[beetmover] {{ product }} {{ branch }} partner repacks push to releases"
@@ -145,6 +198,7 @@
             {{ common_extras(taskname=buildername_push, locales=["null"], platform="null") | indent(12)}}
             treeherderEnv:
                 - staging
+                - production
             treeherder:
                 symbol: pp2m
                 groupSymbol: BM
@@ -153,5 +207,7 @@
                 machine:
                     platform: linux64
                 build:
-                    platform: all
+                    platform: linux64
+            {{ task_notifications("[beetmover] {} {} partner repacks push to releases".format(product, branch), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12) }}
+
 {% endif %}

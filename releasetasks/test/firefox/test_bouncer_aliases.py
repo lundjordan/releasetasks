@@ -51,6 +51,7 @@ class TestBouncerAliases(unittest.TestCase):
             push_to_releases_enabled=False,
             uptake_monitoring_enabled=False,
             postrelease_version_bump_enabled=False,
+            postrelease_mark_as_shipped_enabled=False,
             postrelease_bouncer_aliases_enabled=True,
             tuxedo_server_url="https://bouncer.real.allizom.org/api",
             signing_class="release-signing",
@@ -59,11 +60,12 @@ class TestBouncerAliases(unittest.TestCase):
             funsize_balrog_api_root="http://balrog/api",
             signing_pvt_key=PVT_KEY_FILE,
             build_tools_repo_path='build/tools',
+            publish_to_balrog_channels=None,
         )
         self.task = get_task_by_name(
             self.graph, "release-foo-firefox_bouncer_aliases")
         self.human_task = get_task_by_name(
-            self.graph, "post_release_human_decision")
+            self.graph, "publish_release_human_decision")
         self.payload = self.task["task"]["payload"]
 
     def test_common_assertions(self):

@@ -17,7 +17,8 @@
         priority: "high"
         retries: 5
         routes:
-            - tc-treeherder-stage.{{ branch }}.{{ revision_hash }}
+            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
+            - tc-treeherder.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
             - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.beetmover.en_US.{{ platform }}
             - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.beetmover.en_US.{{ platform }}
         payload:
@@ -37,10 +38,10 @@
                 DUMMY_ENV_FOR_ENCRYPT: "fake"
             encryptedEnv:
                 - {{ encrypt_env_var(stableSlugId(complete_beetmover_basename), now_ms,
-                                   now_ms + 24 * 3600 * 1000, 'AWS_ACCESS_KEY_ID',
+                                   now_ms + 24 * 4 * 3600 * 1000, 'AWS_ACCESS_KEY_ID',
                                    beetmover_aws_access_key_id) }}
                 - {{ encrypt_env_var(stableSlugId(complete_beetmover_basename), now_ms,
-                                   now_ms + 24 * 3600 * 1000, 'AWS_SECRET_ACCESS_KEY',
+                                   now_ms + 24 * 4 * 3600 * 1000, 'AWS_SECRET_ACCESS_KEY',
                                    beetmover_aws_secret_access_key) }}
         metadata:
             name: "[beetmover] {{ product }} {{ branch }} {{ platform }} en_US completes candidates"
@@ -52,6 +53,7 @@
             {{ common_extras(taskname=complete_beetmover_basename, locales=["en-US"], platform=platform) | indent(12)}}
             treeherderEnv:
                 - staging
+                - production
             treeherder:
                 symbol: en-US
                 groupSymbol: BM
@@ -61,6 +63,9 @@
                     platform: {{ get_treeherder_platform(platform) }}
                 build:
                     platform: {{ get_treeherder_platform(platform) }}
+            {{ task_notifications(taskname="[beetmover] {} {} {} en_US completes candidates".format(product, branch, platform), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12) }}
+
+
 {% endif %}  # push_to_candidates_enabled
 
 {% if updates_enabled %}  # funsize
@@ -93,10 +98,12 @@
                 This task generates MAR files and publishes unsigned bits.
 
         routes:
-            - tc-treeherder-stage.{{ branch }}.{{ revision_hash }}
+            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
+            - tc-treeherder.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
             - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.partials.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
             - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.partials.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
         extra:
+            {{ task_notifications(taskname="[funsize] Update generating task {} {} for {}".format(platform, locale, partial_version), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12)}}
             {{ common_extras(taskname='{}_update_generator'.format(funsize_basename), locales=["en-US"], platform=platform) | indent(12)}}
             funsize:
                 partials:
@@ -114,6 +121,7 @@
                         toBuildNumber: {{ buildNumber }}
             treeherderEnv:
                 - staging
+                - production
             treeherder:
                 symbol: {{ locale }}-{{ partial_version }}-g
                 groupSymbol: Update
@@ -177,13 +185,16 @@
                 This task signs MAR files and publishes signed bits.
 
         routes:
-            - tc-treeherder-stage.{{ branch }}.{{ revision_hash }}
+            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
+            - tc-treeherder.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
             - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.partials_signing.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
             - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.partials_signing.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
         extra:
+            {{ task_notifications(taskname="[funsize] MAR signing task {} {} for {}".format(platform, locale, partial_version), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12)}}
             {{ common_extras(taskname='{}_signing_task'.format(funsize_basename), locales=["en-US"], platform=platform) | indent(12)}}
             treeherderEnv:
                 - staging
+                - production
             treeherder:
                 symbol: {{ locale }}-{{ partial_version }}-s
                 groupSymbol: Update
@@ -218,13 +229,16 @@
         expires: "{{ never }}"
         priority: "high"
         routes:
-            - tc-treeherder-stage.{{ branch }}.{{ revision_hash }}
+            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
+            - tc-treeherder.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
             - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.partials_balrog.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
             - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.partials_balrog.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
         extra:
+            {{ task_notifications(taskname="[funsize] Publish to Balrog {} {} for {}".format(platform, locale, partial_version), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12)}}
             {{ common_extras(taskname='{}_balrog_task'.format(funsize_basename), locales=["en-US"], platform=platform) | indent(12)}}
             treeherderEnv:
                 - staging
+                - production
             treeherder:
                 symbol: {{ locale }}-{{ partial_version }}-u
                 groupSymbol: Update
@@ -280,10 +294,10 @@
                 {% endif %}
             encryptedEnv:
                 - {{ encrypt_env_var(stableSlugId('{}_balrog_task'.format(funsize_basename)), now_ms,
-                                    now_ms + 24 * 3600 * 1000, "BALROG_USERNAME",
+                                    now_ms + 24 * 4 * 3600 * 1000, "BALROG_USERNAME",
                                     balrog_username) }}
                 - {{ encrypt_env_var(stableSlugId('{}_balrog_task'.format(funsize_basename)), now_ms,
-                                    now_ms + 24 * 3600 * 1000, "BALROG_PASSWORD",
+                                    now_ms + 24 * 4 * 3600 * 1000, "BALROG_PASSWORD",
                                     balrog_password) }}
             {% if signing_class != "dep-signing" %}
             features:
@@ -308,7 +322,8 @@
         priority: "high"
         retries: 5
         routes:
-            - tc-treeherder-stage.{{ branch }}.{{ revision_hash }}
+            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
+            - tc-treeherder.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
             - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.partials_beetmover.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
             - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.partials_beetmover.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
         payload:
@@ -329,10 +344,10 @@
                 DUMMY_ENV_FOR_ENCRYPT: "fake"
             encryptedEnv:
                 - {{ encrypt_env_var(stableSlugId(partial_beetmover_basename), now_ms,
-                                   now_ms + 24 * 3600 * 1000, 'AWS_ACCESS_KEY_ID',
+                                   now_ms + 24 * 4 * 3600 * 1000, 'AWS_ACCESS_KEY_ID',
                                    beetmover_aws_access_key_id) }}
                 - {{ encrypt_env_var(stableSlugId(partial_beetmover_basename), now_ms,
-                                   now_ms + 24 * 3600 * 1000, 'AWS_SECRET_ACCESS_KEY',
+                                   now_ms + 24 * 4 * 3600 * 1000, 'AWS_SECRET_ACCESS_KEY',
                                    beetmover_aws_secret_access_key) }}
         metadata:
             name: "[beetmover] {{ product }} {{ branch }} {{ platform }} en_US partials candidates"
@@ -341,9 +356,11 @@
             source: https://github.com/mozilla/releasetasks
 
         extra:
+            {{ task_notifications(taskname="[beetmover] {} {} {} en_US partials candidates".format(product, branch, platform), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12)}}
             {{ common_extras(taskname=partial_beetmover_basename, locales=["en-US"], platform=platform) | indent(12)}}
             treeherderEnv:
                 - staging
+                - production
             treeherder:
                 symbol: en-US-{{ partial_version }}
                 groupSymbol: BM

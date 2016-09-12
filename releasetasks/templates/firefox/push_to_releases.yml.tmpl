@@ -45,6 +45,8 @@
 
         extra:
             {{ common_extras(taskname='{}_human_decision'.format(push_to_releases_basename), locales=["null"], platform="null") | indent(12)}}
+            {{ task_notifications("{} {} push to releases human decision task".format(product, branch), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12) }}
+
 {% endif %}
 
 -
@@ -65,8 +67,8 @@
         priority: "high"
         retries: 5
         routes:
-            - tc-treeherder-stage.{{ branch }}.{{ revision_hash }}
-            - tc-treeherder.{{ branch }}.{{ revision_hash }}
+            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
+            - tc-treeherder.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
             - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.push_to_cdn
             - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.push_to_cdn
         payload:
@@ -78,15 +80,15 @@
                 - >
                   wget -O mozharness.tar.bz2 https://hg.mozilla.org/{{ repo_path }}/archive/{{ mozharness_changeset }}.tar.bz2/testing/mozharness &&
                   mkdir mozharness && tar xvfj mozharness.tar.bz2 -C mozharness --strip-components 3 && cd mozharness &&
-                  python scripts/release/push-candidate-to-releases.py --product {{ product }} --version {{ version }} --build-number {{ buildNumber }} --bucket {{ beetmover_candidates_bucket }} {% if partner_repacks_platforms is defined  and partner_repacks_platforms %}--exclude '.*-EME-free/.*'{% endif %}
+                  python scripts/release/push-candidate-to-releases.py --product {{ product }} --version {{ version }} --build-number {{ buildNumber }} --bucket {{ beetmover_candidates_bucket }} {% if partner_repacks_platforms is defined  and partner_repacks_platforms %}--exclude '.*-EME-free/.*' --exclude '.*/win32-sha1/.*'{% endif %}
             env:
                 DUMMY_ENV_FOR_ENCRYPT: "fake"
             encryptedEnv:
                 - {{ encrypt_env_var(stableSlugId(push_to_releases_basename), now_ms,
-                                   now_ms + 24 * 3600 * 1000, 'AWS_ACCESS_KEY_ID',
+                                   now_ms + 24 * 4 * 3600 * 1000, 'AWS_ACCESS_KEY_ID',
                                    beetmover_aws_access_key_id) }}
                 - {{ encrypt_env_var(stableSlugId(push_to_releases_basename), now_ms,
-                                   now_ms + 24 * 3600 * 1000, 'AWS_SECRET_ACCESS_KEY',
+                                   now_ms + 24 * 4 * 3600 * 1000, 'AWS_SECRET_ACCESS_KEY',
                                    beetmover_aws_secret_access_key) }}
         metadata:
             name: "[beetmover] {{ product }} {{ branch }} push to releases"
@@ -107,4 +109,5 @@
                 machine:
                     platform: linux64
                 build:
-                    platform: all
+                    platform: linux64
+            {{ task_notifications("[beetmover] {} {} push to releases".format(product, branch), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12) }}

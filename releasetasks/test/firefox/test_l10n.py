@@ -26,6 +26,7 @@ class TestL10NSingleChunk(unittest.TestCase):
             push_to_releases_enabled=False,
             uptake_monitoring_enabled=False,
             postrelease_version_bump_enabled=False,
+            postrelease_mark_as_shipped_enabled=False,
             postrelease_bouncer_aliases_enabled=False,
             en_US_config={"platforms": {
                 "win32": {"task_id": "xyy"}
@@ -72,6 +73,7 @@ class TestL10NSingleChunk(unittest.TestCase):
             final_verify_channels=["beta"],
             signing_pvt_key=PVT_KEY_FILE,
             build_tools_repo_path='build/tools',
+            publish_to_balrog_channels=None,
         )
         self.task = get_task_by_name(self.graph, "release-mozilla-beta_firefox_win32_l10n_repack_1")
         self.payload = self.task["task"]["payload"]
@@ -176,6 +178,7 @@ class TestL10NMultipleChunks(unittest.TestCase):
             push_to_releases_enabled=False,
             uptake_monitoring_enabled=False,
             postrelease_version_bump_enabled=False,
+            postrelease_mark_as_shipped_enabled=False,
             postrelease_bouncer_aliases_enabled=False,
             enUS_platforms=["win32"],
             en_US_config={"platforms": {
@@ -224,6 +227,7 @@ class TestL10NMultipleChunks(unittest.TestCase):
             final_verify_channels=["beta"],
             signing_pvt_key=PVT_KEY_FILE,
             build_tools_repo_path='build/tools',
+            publish_to_balrog_channels=None,
         )
         self.chunk1 = get_task_by_name(
             self.graph, "release-mozilla-beta_firefox_win32_l10n_repack_1")
@@ -352,6 +356,7 @@ class TestL10NNewLocales(unittest.TestCase):
             uptake_monitoring_enabled=False,
             beetmover_candidates_bucket="bucket",
             postrelease_version_bump_enabled=False,
+            postrelease_mark_as_shipped_enabled=False,
             postrelease_bouncer_aliases_enabled=False,
             enUS_platforms=["win32"],
             en_US_config={"platforms": {
@@ -400,6 +405,7 @@ class TestL10NNewLocales(unittest.TestCase):
             final_verify_channels=["beta"],
             signing_pvt_key=PVT_KEY_FILE,
             build_tools_repo_path='build/tools',
+            publish_to_balrog_channels=None,
         )
 
     def test_common_assertions(self):

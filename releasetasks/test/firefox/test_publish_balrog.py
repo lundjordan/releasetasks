@@ -5,7 +5,7 @@ from releasetasks.test.firefox import make_task_graph, do_common_assertions, \
 from releasetasks.test import PVT_KEY_FILE
 
 
-class TestUptakeMonitoring(unittest.TestCase):
+class TestPublishBalrog(unittest.TestCase):
     maxDiff = 30000
     graph = None
     task = None
@@ -51,21 +51,20 @@ class TestUptakeMonitoring(unittest.TestCase):
             beetmover_candidates_bucket='mozilla-releng-beet-mover-dev',
             push_to_releases_enabled=True,
             push_to_releases_automatic=False,
-            uptake_monitoring_enabled=True,
+            uptake_monitoring_enabled=False,
             postrelease_version_bump_enabled=False,
             postrelease_mark_as_shipped_enabled=False,
             postrelease_bouncer_aliases_enabled=False,
             tuxedo_server_url="https://bouncer.real.allizom.org/api",
-            uptake_monitoring_platforms=["macosx64", "win32", "win64", "linux", "linux64"],
             signing_class="release-signing",
             release_channels=["foo"],
             final_verify_channels=["foo"],
             balrog_api_root="https://balrog.real/api",
             funsize_balrog_api_root="http://balrog/api",
             signing_pvt_key=PVT_KEY_FILE,
-            publish_to_balrog_channels=None,
+            publish_to_balrog_channels=["release-dev", "alpha"],
         )
-        self.task = get_task_by_name(self.graph, "release-foo-firefox_uptake_monitoring")
+        self.task = get_task_by_name(self.graph, "release-foo-firefox_publish_balrog")
         self.payload = self.task["task"]["payload"]
 
     def test_common_assertions(self):
@@ -78,36 +77,14 @@ class TestUptakeMonitoring(unittest.TestCase):
     def test_worker_type(self):
         self.assertEqual(self.task["task"]["workerType"], "buildbot-bridge")
 
-    def test_scopes_present(self):
-        self.assertTrue("scopes" in self.task['task'])
-
     def test_requires(self):
-        requires = [get_task_by_name(self.graph, "release-foo_firefox_push_to_releases")["taskId"]]
+        requires = [get_task_by_name(self.graph, "publish_release_human_decision")["taskId"]]
         self.assertEqual(sorted(self.task["requires"]), sorted(requires))
 
-    def test_product(self):
-        self.assertEqual(self.payload["properties"]["product"],
-                         "firefox")
+    def test_balrog_api(self):
+        self.assertEqual(self.payload["properties"]["balrog_api_root"],
+                         "https://balrog.real/api")
 
-    def test_version(self):
-        self.assertEqual(self.payload["properties"]["version"],
-                         "42.0b2")
-
-    def test_build_number(self):
-        self.assertEqual(self.payload["properties"]["build_number"], 3)
-
-    def test_repo_path(self):
-        self.assertEqual(self.payload["properties"]["repo_path"],
-                         "releases/foo")
-
-    def test_script_repo_revision(self):
-        self.assertEqual(self.payload["properties"]["script_repo_revision"],
-                         "abcd")
-
-    def test_revision(self):
-        self.assertEqual(self.payload["properties"]["revision"],
-                         "fedcba654321")
-
-    def test_tuxedo_server_url(self):
-        self.assertEqual(self.payload["properties"]["tuxedo_server_url"],
-                         "https://bouncer.real.allizom.org/api")
+    def test_channels(self):
+        self.assertEqual(self.payload["properties"]["channels"],
+                         "alpha, release-dev")

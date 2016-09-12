@@ -3,7 +3,7 @@
 -
     taskId: "{{ stableSlugId(buildername) }}"
     requires:
-        - "{{ stableSlugId('post_release_human_decision') }}"
+        - "{{ stableSlugId('publish_release_human_decision') }}"
     reruns: 5
     task:
         provisionerId: "buildbot-bridge"
@@ -42,3 +42,4 @@
 
         extra:
             {{ common_extras(taskname=buildername, locales=["null"], platform="null") | indent(12)}}
+            {{ task_notifications("{} {} version bump".format(product, branch), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12) }}

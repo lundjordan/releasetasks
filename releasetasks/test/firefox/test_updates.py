@@ -51,6 +51,7 @@ class TestUpdates(unittest.TestCase):
             push_to_releases_enabled=False,
             uptake_monitoring_enabled=False,
             postrelease_version_bump_enabled=True,
+            postrelease_mark_as_shipped_enabled=False,
             postrelease_bouncer_aliases_enabled=False,
             updates_builder_enabled=True,
             signing_class="release-signing",
@@ -60,6 +61,7 @@ class TestUpdates(unittest.TestCase):
             funsize_balrog_api_root="http://balrog/api",
             signing_pvt_key=PVT_KEY_FILE,
             build_tools_repo_path='build/tools',
+            publish_to_balrog_channels=None,
         )
         self.task = get_task_by_name(
             self.graph, "release-foo-firefox_updates")

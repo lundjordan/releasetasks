@@ -52,6 +52,7 @@ class TestFinalVerification(unittest.TestCase):
             uptake_monitoring_enabled=True,
             beetmover_candidates_bucket='fake_bucket',
             postrelease_version_bump_enabled=False,
+            postrelease_mark_as_shipped_enabled=False,
             postrelease_bouncer_aliases_enabled=False,
             tuxedo_server_url="https://bouncer.real.allizom.org/api",
             product="firefox",
@@ -59,11 +60,13 @@ class TestFinalVerification(unittest.TestCase):
             release_channels=["foo"],
             final_verify_channels=["foo"],
             final_verify_platforms=["macosx64", "win32", "win64", "linux", "linux64"],
+            uptake_monitoring_platforms=["macosx64", "win32", "win64", "linux", "linux64"],
             balrog_api_root="https://balrog.real/api",
             funsize_balrog_api_root="http://balrog/api",
             enUS_platforms=["linux", "linux64", "win64", "win32", "macosx64"],
             signing_pvt_key=PVT_KEY_FILE,
             build_tools_repo_path='build/tools',
+            publish_to_balrog_channels=None,
         )
         self.task_def = get_task_by_name(self.graph, "foo_final_verify")
         self.task = self.task_def["task"]
@@ -153,6 +156,7 @@ class TestFinalVerificationMultiChannel(unittest.TestCase):
             uptake_monitoring_enabled=False,
             beetmover_candidates_bucket='fake_bucket',
             postrelease_version_bump_enabled=False,
+            postrelease_mark_as_shipped_enabled=False,
             postrelease_bouncer_aliases_enabled=False,
             product="firefox",
             signing_class="release-signing",
@@ -163,6 +167,7 @@ class TestFinalVerificationMultiChannel(unittest.TestCase):
             funsize_balrog_api_root="http://balrog/api",
             signing_pvt_key=PVT_KEY_FILE,
             build_tools_repo_path='build/tools',
+            publish_to_balrog_channels=None,
         )
 
     def test_common_assertions(self):
@@ -254,6 +259,7 @@ class TestFinalVerifyNoMirrors(unittest.TestCase):
             uptake_monitoring_enabled=False,
             beetmover_candidates_bucket='fake_bucket',
             postrelease_version_bump_enabled=False,
+            postrelease_mark_as_shipped_enabled=False,
             postrelease_bouncer_aliases_enabled=False,
             product="firefox",
             signing_class="release-signing",
@@ -265,6 +271,7 @@ class TestFinalVerifyNoMirrors(unittest.TestCase):
             enUS_platforms=["win32", "macosx64"],
             signing_pvt_key=PVT_KEY_FILE,
             build_tools_repo_path='build/tools',
+            publish_to_balrog_channels=None,
         )
         self.task_def = get_task_by_name(self.graph, "beta_final_verify")
         self.task = self.task_def["task"]

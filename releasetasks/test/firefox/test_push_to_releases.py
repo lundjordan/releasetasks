@@ -48,6 +48,7 @@ AUTO_INIT_ITEMS = dict(
     uptake_monitoring_enabled=False,
     beetmover_candidates_bucket='fake_bucket',
     postrelease_version_bump_enabled=False,
+    postrelease_mark_as_shipped_enabled=False,
     postrelease_bouncer_aliases_enabled=False,
     en_US_config=EN_US_CONFIG,
     l10n_config=L10N_CONFIG,
@@ -75,6 +76,7 @@ AUTO_INIT_ITEMS = dict(
     final_verify_channels=["beta", "release"],
     build_tools_repo_path='build/tools',
     partner_repacks_platforms=["win32", "macosx64"],
+    publish_to_balrog_channels=None,
 )
 HUMAN_INIT_ITEMS = AUTO_INIT_ITEMS.copy()
 HUMAN_INIT_ITEMS["push_to_releases_automatic"] = False
@@ -201,6 +203,10 @@ class TestPushToMirrorsAutomatic(unittest.TestCase):
         command = self.task['task']['payload']['command']
         assert "--exclude '.*-EME-free/.*'" in "".join(command)
 
+    def test_exclude_sha1_in_command(self):
+        command = self.task['task']['payload']['command']
+        assert "--exclude '.*/win32-sha1/.*'" in "".join(command)
+
     def test_human_decision_is_none(self):
         self.assertIsNone(get_task_by_name(self.graph, self.human_task_name))
 
@@ -245,3 +251,7 @@ class TestPushToMirrorsGraph2(unittest.TestCase):
     def test_exclude_not_in_command(self):
         command = self.task['task']['payload']['command']
         assert "--exclude '.*-EME-free/.*'" not in "".join(command)
+
+    def test_exclude_sha1_not_in_command(self):
+        command = self.task['task']['payload']['command']
+        assert "--exclude '.*/win32-sha1/.*'" not in "".join(command)

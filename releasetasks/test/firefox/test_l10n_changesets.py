@@ -64,6 +64,7 @@ class TestL10NChangesets(unittest.TestCase):
             beetmover_candidates_bucket='mozilla-releng-beet-mover-dev',
             push_to_releases_enabled=True,
             postrelease_version_bump_enabled=False,
+            postrelease_mark_as_shipped_enabled=False,
             postrelease_bouncer_aliases_enabled=False,
             push_to_releases_automatic=True,
             uptake_monitoring_enabled=False,
@@ -75,6 +76,7 @@ class TestL10NChangesets(unittest.TestCase):
             build_tools_repo_path='build/tools',
             partner_repacks_platforms=["win32", "linux"],
             l10n_changesets={"ab": "cd", "ef": "gh", "ij": "kl"},
+            publish_to_balrog_channels=None,
         )
         self.task = get_task_by_name(self.graph, "foo_l10n_changeset")
         self.task_beet = get_task_by_name(self.graph, "foo_l10n_changeset_beet")
