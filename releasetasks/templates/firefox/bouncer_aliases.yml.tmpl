@@ -16,8 +16,9 @@
         scopes:
             - project:releng:buildbot-bridge:builder-name:{{ buildername }}
         routes:
-            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.bouncer_aliases
-            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.bouncer_aliases
+            {% for release_route in release_routes %}
+            - {{ release_route }}.bouncer_aliases
+            {% endfor %}
         payload:
             buildername: "{{ buildername }}"
             sourcestamp:

@@ -61,10 +61,12 @@
                 Generates a source tarball
 
         routes:
-            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - tc-treeherder.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.source_tarball
-            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.source_tarball
+            {% for release_route in release_routes %}
+            - {{ release_route }}.source_tarball
+            {% endfor %}
+            {% for treeherder_route in treeherder_routes %}
+            - {{ treeherder_route }}
+            {% endfor %}
         extra:
             {{ common_extras(taskname=buildername, locales=["null"], platform="null") | indent(12)}}
             treeherderEnv:
@@ -107,11 +109,12 @@
                 Sign source tarball
 
         routes:
-            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - tc-treeherder-production.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.source_tarball_signing
-            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.source_tarball_signing
-
+            {% for release_route in release_routes %}
+            - {{ release_route }}.source_tarball_signing
+            {% endfor %}
+            {% for treeherder_route in treeherder_routes %}
+            - {{ treeherder_route }}
+            {% endfor %}
         extra:
             {{ common_extras(taskname=buildername_signing, locales=["null"], platform="null") | indent(12)}}
             treeherderEnv:
@@ -143,11 +146,12 @@
         priority: "high"
         retries: 5
         routes:
-            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - tc-treeherder-production.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.source_tarball_beetmover
-            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.source_tarball_beetmover
-
+            {% for release_route in release_routes %}
+            - {{ release_route }}.source_tarball_beetmover
+            {% endfor %}
+            {% for treeherder_route in treeherder_routes %}
+            - {{ treeherder_route }}
+            {% endfor %}
         payload:
             maxRunTime: 7200
             image:
@@ -207,10 +211,12 @@
         priority: "high"
         retries: 5
         routes:
-            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - tc-treeherder.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.source_tarball_sigs_beetmover
-            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.source_tarball_sigs_beetmover
+            {% for release_route in release_routes %}
+            - {{ release_route }}.source_tarball_sigs_beetmover
+            {% endfor %}
+            {% for treeherder_route in treeherder_routes %}
+            - {{ treeherder_route }}
+            {% endfor %}
         payload:
             maxRunTime: 7200
             image:

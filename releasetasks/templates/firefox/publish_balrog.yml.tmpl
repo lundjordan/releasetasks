@@ -16,8 +16,9 @@
         scopes:
             - project:releng:buildbot-bridge:builder-name:{{ buildername }}
         routes:
-            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.publish_balrog
-            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.publish_balrog
+            {% for release_route in release_routes %}
+            - {{ release_route }}.publish_balrog
+            {% endfor %}
         payload:
             buildername: "{{ buildername }}"
             sourcestamp:

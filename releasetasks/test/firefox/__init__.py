@@ -44,7 +44,7 @@ def do_common_assertions(graph):
             assert t["taskId"] not in _cached_taskIDs
             assert "routes" in task
             rel_routes = [r.startswith("index.releases.") for r in task["routes"]]
-            assert len(rel_routes) >= 2, "At least 2 release index routes required"
+            assert len(rel_routes) >= 4, "At least 4 release index routes required"
 
             if task["provisionerId"] == "buildbot-bridge":
                 assert "treeherder" not in task["extra"], \

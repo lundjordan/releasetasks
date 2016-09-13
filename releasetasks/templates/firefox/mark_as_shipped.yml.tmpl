@@ -16,9 +16,9 @@
         scopes:
             - project:releng:buildbot-bridge:builder-name:{{ buildername }}
         routes:
-            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.mark_as_shipped
-            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.mark_as_shipped
-
+            {% for release_route in release_routes %}
+            - {{ release_route }}.mark_as_shipped
+            {% endfor %}
         payload:
             buildername: "{{ buildername }}"
             sourcestamp:

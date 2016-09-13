@@ -22,8 +22,9 @@
         scopes:
             - project:releng:buildbot-bridge:builder-name:{{ uv_buildername }}
         routes:
-            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.update_verify.{{ channel }}.{{ platform }}.{{ chunk }}
-            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.update_verify.{{ channel }}.{{ platform }}.{{ chunk }}
+            {% for release_route in release_routes %}
+            - {{ release_route }}.update_verify.{{ channel }}.{{ platform }}.{{ chunk }}
+            {% endfor %}
         payload:
             buildername: "{{ uv_buildername }}"
             sourcestamp:

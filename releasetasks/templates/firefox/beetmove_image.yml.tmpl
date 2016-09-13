@@ -11,10 +11,12 @@
         priority: "high"
         retries: 5
         routes:
-            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - tc-treeherder.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.beetmove_image
-            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.beetmove_image
+            {% for release_route in release_routes %}
+            - {{ release_route }}.beetmove_image
+            {% endfor %}
+            {% for treeherder_route in treeherder_routes %}
+            - {{ treeherder_route }}
+            {% endfor %}
         payload:
             artifacts:
                 public/image.tar:

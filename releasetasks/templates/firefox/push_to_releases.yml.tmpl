@@ -32,9 +32,9 @@
         priority: "high"
         retries: 5
         routes:
-            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.push_to_cdn_human
-            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.push_to_cdn_human
-
+            {% for release_route in release_routes %}
+            - {{ release_route }}.push_to_cdn_human
+            {% endfor %}
         payload:
             description: "required"
         metadata:
@@ -67,10 +67,12 @@
         priority: "high"
         retries: 5
         routes:
-            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - tc-treeherder.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.push_to_cdn
-            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.push_to_cdn
+            {% for release_route in release_routes %}
+            - {{ release_route }}.push_to_cdn
+            {% endfor %}
+            {% for treeherder_route in treeherder_routes %}
+            - {{ treeherder_route }}
+            {% endfor %}
         payload:
             maxRunTime: 7200
             image: "kmoir/python-beet-runner@sha256:4f6dc84c4386406090a9c72b976be03dea647f01fe45a023d63ce0e479eb3497"

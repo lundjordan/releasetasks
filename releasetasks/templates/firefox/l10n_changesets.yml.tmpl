@@ -38,10 +38,12 @@
             description:  Generates L10N changesets
 
         routes:
-            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - tc-treeherder.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.l10n_changesets
-            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.l10n_changesets
+            {% for release_route in release_routes %}
+            - {{ release_route }}.l10n_changesets
+            {% endfor %}
+            {% for treeherder_route in treeherder_routes %}
+            - {{ treeherder_route }}
+            {% endfor %}
         extra:
             {{ common_extras(taskname=buildername, locales=["null"], platform="null") | indent(12)}}
             treeherderEnv:
@@ -76,11 +78,12 @@
         priority: "high"
         retries: 5
         routes:
-            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - tc-treeherder.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.l10n_changesets_beetmover
-            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.l10n_changesets_beetmover
-
+            {% for release_route in release_routes %}
+            - {{ release_route }}.l10n_changesets_beetmover
+            {% endfor %}
+            {% for treeherder_route in treeherder_routes %}
+            - {{ treeherder_route }}
+            {% endfor %}
         payload:
             maxRunTime: 600
             image:

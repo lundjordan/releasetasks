@@ -16,11 +16,10 @@
         retries: 5
         scopes:
             - project:releng:buildbot-bridge:builder-name:{{ buildername }}
-
         routes:
-            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.checksums
-            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.checksums
-
+            {% for release_route in release_routes %}
+            - {{ release_route }}.checksums
+            {% endfor %}
         payload:
             buildername: "{{ buildername }}"
             sourcestamp:

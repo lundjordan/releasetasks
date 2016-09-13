@@ -1,0 +1,23 @@
+# Routing Templates: releases v2!
+
+# version (simple, direct route)
+{% do release_routes.append('releases.v2.{app}.version.{version}.build{build_num}'
+        .format(app=product, version=version.replace('.', '_'), build_num=buildNumber)) %}
+# pushdate
+{% do release_routes.append('releases.v2.{app}.pushdate.{year}.{mm}.{dd}.{version}.build{build_num}'
+        .format(app=product, year=now.year, mm=now.month, dd=now.day,
+                version=version.replace('.', '_'), build_num=buildNumber)) %}
+# revision
+{% do release_routes.append('releases.v2.{app}.revision.{branch}.{revision}.{version}.build{build_num}'
+        .format(app=product, branch=branch, revision=revision,
+                version=version.replace('.', '_'), build_num=buildNumber)) %}
+# latest revision (convenience)
+{% do release_routes.append('releases.v2.{app}.revision.{branch}.latest.{version}.build{build_num}'
+        .format(app=product, branch=branch, version=version.replace('.', '_'), build_num=buildNumber)) %}
+
+# treeherder staging
+{% do treeherder_routes.append('tc-treeherder-stage.v2.{branch}.{revision}.{pushlog_id}'
+        .format(branch=branch, revision=revision, pushlog_id=pushlog_id)) %}
+# treeherder production
+{% do treeherder_routes.append('tc-treeherder.v2.{branch}.{revision}.{pushlog_id}'
+        .format(branch=branch, revision=revision, pushlog_id=pushlog_id)) %}

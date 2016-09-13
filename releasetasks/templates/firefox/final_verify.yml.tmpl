@@ -22,10 +22,12 @@
         priority: "high"
         retries: 5
         routes:
-            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - tc-treeherder.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.final_verify
-            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.final_verify
+            {% for release_route in release_routes %}
+            - {{ release_route }}.final_verify
+            {% endfor %}
+            {% for treeherder_route in treeherder_routes %}
+            - {{ treeherder_route }}
+            {% endfor %}
         payload:
             maxRunTime: 7200
             image: "rail/python-test-runner@sha256:450b126cab40b9c105cf260733423cbc47480442c86efdcb387a67efba00d698"

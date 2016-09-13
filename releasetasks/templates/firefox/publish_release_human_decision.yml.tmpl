@@ -11,8 +11,9 @@
         priority: "high"
         retries: 5
         routes:
-            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.publish_release_human_decision
-            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.publish_release_human_decision
+            {% for release_route in release_routes %}
+            - {{ release_route }}.publish_release_human_decision
+            {% endfor %}
         payload:
             description: "required"
         metadata:

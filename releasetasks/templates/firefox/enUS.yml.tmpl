@@ -17,10 +17,12 @@
         priority: "high"
         retries: 5
         routes:
-            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - tc-treeherder.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.beetmover.en_US.{{ platform }}
-            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.beetmover.en_US.{{ platform }}
+            {% for release_route in release_routes %}
+            - {{ release_route }}.beetmover.en_US.{{ platform }}
+            {% endfor %}
+            {% for treeherder_route in treeherder_routes %}
+            - {{ treeherder_route }}
+            {% endfor %}
         payload:
             maxRunTime: 7200
             image:
@@ -98,10 +100,12 @@
                 This task generates MAR files and publishes unsigned bits.
 
         routes:
-            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - tc-treeherder.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.partials.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
-            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.partials.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
+            {% for release_route in release_routes %}
+            - {{ release_route }}.partials.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
+            {% endfor %}
+            {% for treeherder_route in treeherder_routes %}
+            - {{ treeherder_route }}
+            {% endfor %}
         extra:
             {{ task_notifications(taskname="[funsize] Update generating task {} {} for {}".format(platform, locale, partial_version), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12)}}
             {{ common_extras(taskname='{}_update_generator'.format(funsize_basename), locales=["en-US"], platform=platform) | indent(12)}}
@@ -185,10 +189,12 @@
                 This task signs MAR files and publishes signed bits.
 
         routes:
-            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - tc-treeherder.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.partials_signing.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
-            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.partials_signing.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
+            {% for release_route in release_routes %}
+            - {{ release_route }}.partials_signing.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
+            {% endfor %}
+            {% for treeherder_route in treeherder_routes %}
+            - {{ treeherder_route }}
+            {% endfor %}
         extra:
             {{ task_notifications(taskname="[funsize] MAR signing task {} {} for {}".format(platform, locale, partial_version), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12)}}
             {{ common_extras(taskname='{}_signing_task'.format(funsize_basename), locales=["en-US"], platform=platform) | indent(12)}}
@@ -229,10 +235,12 @@
         expires: "{{ never }}"
         priority: "high"
         routes:
-            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - tc-treeherder.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.partials_balrog.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
-            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.partials_balrog.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
+            {% for release_route in release_routes %}
+            - {{ release_route }}.partials_balrog.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
+            {% endfor %}
+            {% for treeherder_route in treeherder_routes %}
+            - {{ treeherder_route }}
+            {% endfor %}
         extra:
             {{ task_notifications(taskname="[funsize] Publish to Balrog {} {} for {}".format(platform, locale, partial_version), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12)}}
             {{ common_extras(taskname='{}_balrog_task'.format(funsize_basename), locales=["en-US"], platform=platform) | indent(12)}}
@@ -322,10 +330,12 @@
         priority: "high"
         retries: 5
         routes:
-            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - tc-treeherder.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
-            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.partials_beetmover.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
-            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.partials_beetmover.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
+            {% for release_route in release_routes %}
+            - {{ release_route }}.partials_beetmover.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ locale }}
+            {% endfor %}
+            {% for treeherder_route in treeherder_routes %}
+            - {{ treeherder_route }}
+            {% endfor %}
         payload:
             maxRunTime: 7200
             # TODO - create specific image for this

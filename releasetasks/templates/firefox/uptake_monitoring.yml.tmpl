@@ -16,8 +16,9 @@
         scopes:
             - project:releng:buildbot-bridge:builder-name:{{ uptake_buildername }}
         routes:
-            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.uptake_monitoring
-            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.uptake_monitoring
+            {% for release_route in release_routes %}
+            - {{ release_route }}.uptake_monitoring
+            {% endfor %}
         payload:
             buildername: "{{ uptake_buildername }}"
             sourcestamp:

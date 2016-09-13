@@ -10,6 +10,11 @@
 {% macro task_notifications(taskname, failed=None, exception=None, artifact=None, completed=None) %}
 {% include "notifications.yml.tmpl" %}
 {% endmacro %}
+
+{% set release_routes = [] %}
+{% set treeherder_routes = [] %}
+{% include "routes.yml.tmpl" %}
+
 ---
 metadata:
     name: "Release Promotion"
