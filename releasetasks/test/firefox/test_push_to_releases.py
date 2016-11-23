@@ -1,8 +1,9 @@
 import unittest
 
 from releasetasks.test.firefox import make_task_graph, do_common_assertions, \
-    get_task_by_name
-from releasetasks.test import PVT_KEY_FILE
+    get_task_by_name, create_firefox_test_args
+from releasetasks.test import generate_scope_validator, PVT_KEY_FILE, verify
+from voluptuous import Schema, truth
 
 EN_US_CONFIG = {
     "platforms": {
@@ -34,55 +35,6 @@ L10N_CONFIG = {
 }
 
 
-AUTO_INIT_ITEMS = dict(
-    version="42.0b2",
-    next_version="42.0b3",
-    appVersion="42.0",
-    buildNumber=3,
-    source_enabled=False,
-    checksums_enabled=True,
-    updates_enabled=True,
-    bouncer_enabled=False,
-    push_to_candidates_enabled=True,
-    push_to_releases_enabled=True,
-    uptake_monitoring_enabled=False,
-    beetmover_candidates_bucket='fake_bucket',
-    postrelease_version_bump_enabled=False,
-    postrelease_mark_as_shipped_enabled=False,
-    postrelease_bouncer_aliases_enabled=False,
-    en_US_config=EN_US_CONFIG,
-    l10n_config=L10N_CONFIG,
-    partial_updates={
-        "38.0": {
-            "buildNumber": 1,
-            "locales": ["de", "en-GB", "zh-TW"],
-        },
-        "37.0": {
-            "buildNumber": 2,
-            "locales": ["de", "en-GB", "zh-TW"],
-        },
-    },
-    branch="mozilla-beta",
-    repo_path="releases/mozilla-beta",
-    product="firefox",
-    revision="abcdef123456",
-    mozharness_changeset="abcd",
-    balrog_api_root="https://balrog.real/api",
-    funsize_balrog_api_root="http://balrog/api",
-    signing_class="release-signing",
-    verifyConfigs={},
-    signing_pvt_key=PVT_KEY_FILE,
-    release_channels=["beta", "release"],
-    final_verify_channels=["beta", "release"],
-    build_tools_repo_path='build/tools',
-    partner_repacks_platforms=["win32", "macosx64"],
-    publish_to_balrog_channels=None,
-)
-HUMAN_INIT_ITEMS = AUTO_INIT_ITEMS.copy()
-HUMAN_INIT_ITEMS["push_to_releases_automatic"] = False
-AUTO_INIT_ITEMS["push_to_releases_automatic"] = True
-
-
 class TestPushToMirrorsHuman(unittest.TestCase):
     maxDiff = 30000
     graph = None
@@ -92,51 +44,69 @@ class TestPushToMirrorsHuman(unittest.TestCase):
                                                                              "firefox")
 
     def setUp(self):
-        self.graph = make_task_graph(**HUMAN_INIT_ITEMS)
+        self.graph_schema = Schema({
+            'scopes': generate_scope_validator(scopes={
+                "queue:task-priority:high",
+                "queue:define-task:aws-provisioner-v1/opt-linux64",
+                "queue:create-task:aws-provisioner-v1/opt-linux64",
+            })
+        }, required=True, extra=True)
+
+        self.task_schema = Schema({
+            'task': {
+                'provisionerId': 'aws-provisioner-v1',
+                'workerType': 'opt-linux64',
+            }
+        }, extra=True, required=True)
+
+        self.human_task_schema = Schema({
+            'task': {
+                'provisionerId': 'null-provisioner',
+                'workerType': 'human-decision',
+            }
+        }, extra=True, required=True)
+
+        test_kwargs = create_firefox_test_args({
+            'checksums_enabled': True,
+            'updates_enabled': True,
+            'push_to_candidates_enabled': True,
+            'push_to_releases_enabled': True,
+            'branch': 'mozilla-beta',
+            'repo_path': 'releases/mozilla-beta',
+            'signing_pvt_key': PVT_KEY_FILE,
+            'release_channels': ['beta', 'release'],
+            'final_verify_channels': ['beta', 'release'],
+            'partner_repacks_platforms': ['win32', 'macosx64'],
+            'en_US_config': EN_US_CONFIG,
+            'l10n_config': L10N_CONFIG,
+        })
+        self.graph = make_task_graph(**test_kwargs)
         self.task = get_task_by_name(
             self.graph, "release-{}_{}_push_to_releases".format("mozilla-beta", "firefox")
         )
         self.human_task = get_task_by_name(self.graph, self.human_task_name)
 
-    def test_common_assertions(self):
-        do_common_assertions(self.graph)
+    @staticmethod
+    @truth
+    def validate_task_not_allowed(task):
+        return 'scopes' not in task['task']
 
-    def test_provisioner(self):
-        self.assertEqual(self.task["task"]["provisionerId"], "aws-provisioner-v1")
+    @staticmethod
+    @truth
+    def validate_task_command(task):
+        command = ''.join(task['task']['payload']['command'])
+        return '--version 42.0b2' in command and '--build-number 3' in command
 
-    def test_worker_type(self):
-        self.assertEqual(self.task["task"]["workerType"], "opt-linux64")
+    def generate_task_requires_validator(self):
+        requires = [self.human_task['taskId']]
 
-    def test_scopes_present(self):
-        self.assertFalse("scopes" in self.task["task"])
+        @truth
+        def validate_task_requires(task):
+            return requires == task['requires']
 
-    def test_graph_scopes(self):
-        expected_graph_scopes = set([
-            "queue:task-priority:high",
-            "queue:define-task:aws-provisioner-v1/opt-linux64",
-            "queue:create-task:aws-provisioner-v1/opt-linux64"
-        ])
-        self.assertTrue(expected_graph_scopes.issubset(self.graph["scopes"]))
+        return validate_task_requires
 
-    def test_version_in_command(self):
-        command = self.task['task']['payload']['command']
-        self.assertTrue("--version 42.0b2" in "".join(command))
-
-    def test_build_num_in_command(self):
-        command = self.task['task']['payload']['command']
-        self.assertTrue("--build-number 3" in "".join(command))
-
-    def test_requires(self):
-        requires = [get_task_by_name(self.graph, self.human_task_name)["taskId"]]
-        self.assertEqual(self.task["requires"], requires)
-
-    def test_human_provisioner(self):
-        self.assertEqual(self.human_task["task"]["provisionerId"], "null-provisioner")
-
-    def test_human_worker_type(self):
-        self.assertEqual(self.human_task["task"]["workerType"], "human-decision")
-
-    def test_human_requires(self):
+    def generate_human_task_requires_validator(self):
         en_US_tmpl = "release-mozilla-beta_firefox_{}_complete_en-US_beetmover_candidates"
         en_US_partials_tmpl = "release-mozilla-beta_firefox_{}_partial_en-US_{}build{}_beetmover_candidates"
         l10n_tmpl = "release-mozilla-beta_firefox_{}_l10n_repack_beetmover_candidates_1"
@@ -144,17 +114,38 @@ class TestPushToMirrorsHuman(unittest.TestCase):
         requires = []
         for completes in (en_US_tmpl, l10n_tmpl):
             requires.extend([
-                get_task_by_name(self.graph, completes.format(p))["taskId"]
-                for p in ("macosx64", "win32")
-            ])
+                                get_task_by_name(self.graph, completes.format(p))["taskId"]
+                                for p in ("macosx64", "win32")
+                                ])
         for partials in (en_US_partials_tmpl, l10n_partials_tmpl):
             requires.extend([
-                get_task_by_name(self.graph, partials.format(platform, p_version, p_build_num))["taskId"]
-                for platform in ("macosx64", "win32")
-                for p_version, p_build_num in (('38.0', '1'), ('37.0', '2'))
-            ])
+                                get_task_by_name(self.graph, partials.format(platform, p_version, p_build_num))[
+                                    "taskId"]
+                                for platform in ("macosx64", "win32")
+                                for p_version, p_build_num in (('38.0', '1'), ('37.0', '2'))
+                                ])
         requires.append(get_task_by_name(self.graph, "release-mozilla-beta-firefox_chcksms")["taskId"])
-        self.assertEqual(sorted(self.human_task["requires"]), sorted(requires))
+
+        @truth
+        def validate_human_task_requires(human_task):
+            return sorted(human_task['requires']) == sorted(requires)
+
+        return validate_human_task_requires
+
+    def test_common_assertions(self):
+        do_common_assertions(self.graph)
+
+    def test_graph(self):
+        verify(self.graph, self.graph_schema)
+
+    def test_task(self):
+        verify(self.task, self.task_schema,
+               TestPushToMirrorsHuman.validate_task_not_allowed,
+               TestPushToMirrorsHuman.validate_task_command,
+               self.generate_task_requires_validator())
+
+    def test_human_task(self):
+        verify(self.human_task, self.human_task_schema, self.generate_human_task_requires_validator())
 
 
 class TestPushToMirrorsAutomatic(unittest.TestCase):
@@ -166,51 +157,60 @@ class TestPushToMirrorsAutomatic(unittest.TestCase):
                                                                              "firefox")
 
     def setUp(self):
-        self.graph = make_task_graph(**AUTO_INIT_ITEMS)
-        self.task = get_task_by_name(
-            self.graph, "release-{}_{}_push_to_releases".format("mozilla-beta", "firefox")
-        )
+        self.graph_schema = Schema({
+            'scopes': generate_scope_validator(scopes={
+                "queue:task-priority:high",
+                "queue:define-task:aws-provisioner-v1/opt-linux64",
+                "queue:create-task:aws-provisioner-v1/opt-linux64",
+            })
+        }, extra=True, required=True)
 
-    def test_common_assertions(self):
-        do_common_assertions(self.graph)
+        self.task_schema = Schema({
+            'task': {
+                'provisionerId': 'aws-provisioner-v1',
+                'workerType': 'opt-linux64',
+            }
+        }, extra=True, required=True)
 
-    def test_provisioner(self):
-        self.assertEqual(self.task["task"]["provisionerId"], "aws-provisioner-v1")
+        self.human_task_schema = Schema(None)
 
-    def test_worker_type(self):
-        self.assertEqual(self.task["task"]["workerType"], "opt-linux64")
+        test_kwargs = create_firefox_test_args({
+            'checksums_enabled': True,
+            'updates_enabled': True,
+            'push_to_candidates_enabled': True,
+            'push_to_releases_enabled': True,
+            'push_to_releases_automatic': True,
+            'branch': 'mozilla-beta',
+            'repo_path': 'releases/mozilla-beta',
+            'signing_pvt_key': PVT_KEY_FILE,
+            'release_channels': ['beta', 'release'],
+            'final_verify_channels': ['beta', 'release'],
+            'partner_repacks_platforms': ['win32', 'macosx64'],
+            'en_US_config': EN_US_CONFIG,
+            'l10n_config': L10N_CONFIG,
+        })
 
-    def test_scopes_present(self):
-        self.assertFalse("scopes" in self.task["task"])
+        self.graph = make_task_graph(**test_kwargs)
+        self.task = get_task_by_name(self.graph, "release-{}_{}_push_to_releases".format("mozilla-beta", "firefox"))
+        self.human_task = get_task_by_name(self.graph, self.human_task_name)
 
-    def test_graph_scopes(self):
-        expected_graph_scopes = set([
-            "queue:task-priority:high",
-            "queue:define-task:aws-provisioner-v1/opt-linux64",
-            "queue:create-task:aws-provisioner-v1/opt-linux64"
-        ])
-        self.assertTrue(expected_graph_scopes.issubset(self.graph["scopes"]))
+    @staticmethod
+    @truth
+    def validate_task_not_allowed(task):
+        return 'scopes' not in task['task']
 
-    def test_version_in_command(self):
-        command = self.task['task']['payload']['command']
-        self.assertTrue("--version 42.0b2" in "".join(command))
+    @staticmethod
+    @truth
+    def validate_task_command(task):
+        command = ''.join(task['task']['payload']['command'])
+        return '--version 42.0b2' in command and \
+               '--build-number 3' in command and \
+               "--exclude '.*-EME-free/.*'" in command and \
+               "--exclude '.*/win32-sha1/.*'" in command and \
+               "--exclude '.*/snap/.*'" in command
 
-    def test_build_num_in_command(self):
-        command = self.task['task']['payload']['command']
-        self.assertTrue("--build-number 3" in "".join(command))
-
-    def test_exclude_in_command(self):
-        command = self.task['task']['payload']['command']
-        assert "--exclude '.*-EME-free/.*'" in "".join(command)
-
-    def test_exclude_sha1_in_command(self):
-        command = self.task['task']['payload']['command']
-        assert "--exclude '.*/win32-sha1/.*'" in "".join(command)
-
-    def test_human_decision_is_none(self):
-        self.assertIsNone(get_task_by_name(self.graph, self.human_task_name))
-
-    def test_requires(self):
+    # Returns validator for task dependencies
+    def generate_task_requires_validator(self):
         en_US_tmpl = "release-mozilla-beta_firefox_{}_complete_en-US_beetmover_candidates"
         en_US_partials_tmpl = "release-mozilla-beta_firefox_{}_partial_en-US_{}build{}_beetmover_candidates"
         l10n_tmpl = "release-mozilla-beta_firefox_{}_l10n_repack_beetmover_candidates_1"
@@ -223,12 +223,30 @@ class TestPushToMirrorsAutomatic(unittest.TestCase):
             ])
         for partials in (en_US_partials_tmpl, l10n_partials_tmpl):
             requires.extend([
-                get_task_by_name(self.graph, partials.format(platform, p_version, p_build_num))["taskId"]
+                get_task_by_name(self.graph, partials.format(platform, p_version, p_build_num))[
+                    "taskId"]
                 for platform in ("macosx64", "win32")
                 for p_version, p_build_num in (('38.0', '1'), ('37.0', '2'))
             ])
         requires.append(get_task_by_name(self.graph, "release-mozilla-beta-firefox_chcksms")["taskId"])
-        self.assertEqual(sorted(self.task["requires"]), sorted(requires))
+
+        @truth
+        def validate_task_requires(task):
+            return sorted(task['requires']) == sorted(requires)
+
+        return validate_task_requires
+
+    def test_common_assertions(self):
+        do_common_assertions(self.graph)
+
+    def test_task(self):
+        verify(self.task, self.task_schema,
+               TestPushToMirrorsAutomatic.validate_task_not_allowed,
+               TestPushToMirrorsAutomatic.validate_task_command,
+               self.generate_task_requires_validator())
+
+    def test_human_task(self):
+        verify(self.human_task, self.human_task_schema)
 
 
 class TestPushToMirrorsGraph2(unittest.TestCase):
@@ -240,18 +258,30 @@ class TestPushToMirrorsGraph2(unittest.TestCase):
                                                                              "firefox")
 
     def setUp(self):
-        kwargs = AUTO_INIT_ITEMS.copy()
-        kwargs["partner_repacks_platforms"] = []
+        test_kwargs = create_firefox_test_args({
+            'checksums_enabled': True,
+            'updates_enabled': True,
+            'push_to_candidates_enabled': True,
+            'push_to_releases_enabled': True,
+            'push_to_releases_automatic': True,
+            'branch': 'mozilla-beta',
+            'repo_path': 'releases/mozilla-beta',
+            'signing_pvt_key': PVT_KEY_FILE,
+            'release_channels': ['beta', 'release'],
+            'final_verify_channels': ['beta', 'release'],
+            'partner_repacks_platforms': [],
+            'en_US_config': EN_US_CONFIG,
+            'l10n_config': L10N_CONFIG,
+        })
 
-        self.graph = make_task_graph(**kwargs)
-        self.task = get_task_by_name(
-            self.graph, "release-{}_{}_push_to_releases".format("mozilla-beta", "firefox")
-        )
+        self.graph = make_task_graph(**test_kwargs)
+        self.task = get_task_by_name(self.graph, "release-{}_{}_push_to_releases".format("mozilla-beta", "firefox"))
 
-    def test_exclude_not_in_command(self):
-        command = self.task['task']['payload']['command']
-        assert "--exclude '.*-EME-free/.*'" not in "".join(command)
+    @staticmethod
+    @truth
+    def validate_command(task):
+        command = ''.join(task['task']['payload']['command'])
+        return "--exclude '.*-EME-free/.*'" not in command and "--exclude '.*/win32-sha1/.*'" not in command
 
-    def test_exclude_sha1_not_in_command(self):
-        command = self.task['task']['payload']['command']
-        assert "--exclude '.*/win32-sha1/.*'" not in "".join(command)
+    def test_task(self):
+        verify(self.task, TestPushToMirrorsGraph2.validate_command)
