@@ -1,7 +1,7 @@
 {% if push_to_releases_enabled %}
   {% set final_verify_upstream_builders = ["release-{}-{}_uptake_monitoring".format(branch, product)] %}
 {% else %}
-  {% set final_verify_upstream_builders  = artifact_completes_builders + artifact_partials_builders %}
+  {% set final_verify_upstream_builders  = artifact_completes_builders + artifact_partials_builders + balrog_submission_builders %}
 {% endif %}
 
 {% for channel in final_verify_channels %}
