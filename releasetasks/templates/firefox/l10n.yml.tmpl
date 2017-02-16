@@ -51,6 +51,8 @@
 
         extra:
             {{ common_extras(taskname='{}_{}'.format(buildername, chunk), locales=our_locales, platform=platform) | indent(12)}}
+            {{ task_notifications("{} {} {} l10n repack {}/{}".format(product, branch, platform, chunk, platform_info.chunks), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12) }}
+
 -
     # Every l10n task requires a special task to attach all artifacts
     taskId: "{{ stableSlugId('{}_artifacts_{}'.format(buildername, chunk)) }}"
@@ -78,6 +80,7 @@
 
         extra:
             {{ common_extras(taskname='{}_artifacts_{}'.format(buildername, chunk), locales=our_locales, platform=platform) | indent(12)}}
+            {{ task_notifications("{} {} {} l10n repack artifacts {}/{}".format(product, branch, platform, chunk, platform_info.chunks), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12) }}
 
 # repacks beetmover
 {% if push_to_candidates_enabled %}
@@ -97,7 +100,8 @@
         priority: "high"
         retries: 5
         routes:
-            - tc-treeherder-stage.{{ branch }}.{{ revision_hash }}
+            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
+            - tc-treeherder.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
             - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.beetmover.{{ chunk }}.{{ platform }}
             - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.beetmover.{{ chunk }}.{{ platform }}
         payload:
@@ -118,10 +122,10 @@
                 DUMMY_ENV_FOR_ENCRYPT: "fake"
             encryptedEnv:
                 - {{ encrypt_env_var(stableSlugId('{}_beetmover_candidates_{}'.format(buildername, chunk)), now_ms,
-                                   now_ms + 24 * 3600 * 1000, 'AWS_ACCESS_KEY_ID',
+                                   now_ms + 24 * 4 * 3600 * 1000, 'AWS_ACCESS_KEY_ID',
                                    beetmover_aws_access_key_id) }}
                 - {{ encrypt_env_var(stableSlugId('{}_beetmover_candidates_{}'.format(buildername, chunk)), now_ms,
-                                   now_ms + 24 * 3600 * 1000, 'AWS_SECRET_ACCESS_KEY',
+                                   now_ms + 24 * 4 * 3600 * 1000, 'AWS_SECRET_ACCESS_KEY',
                                    beetmover_aws_secret_access_key) }}
         metadata:
             name: "[beetmover] {{ product }} {{ branch }} {{ platform }} locales completes candidates {{ chunk }}/{{ platform_info["chunks"] }}"
@@ -130,9 +134,11 @@
             source: https://github.com/mozilla/releasetasks
 
         extra:
+            {{ task_notifications("[beetmover] {} {} {} locales completes candidates {}/{}".format(product, branch, platform, chunk, platform_info.chunks), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12) }}
             {{ common_extras(taskname='{}_beetmover_candidates_{}'.format(buildername, chunk), locales=our_locales, platform=platform) | indent(12)}}
             treeherderEnv:
                 - staging
+                - production
             treeherder:
                 symbol: l10n-{{ chunk }}
                 groupSymbol: BM
@@ -142,6 +148,8 @@
                     platform: {{ get_treeherder_platform(platform) }}
                 build:
                     platform: {{ get_treeherder_platform(platform) }}
+            {{ task_notifications("[beetmover] {} {} {} locales completes candidates {}/{}".format(product, branch, platform, chunk, platform_info.chunks), failed=["releasetasks"], exception=["releasetasks"], completed=["releasetasks"]) | indent(12) }}
+
 {% endif %}
 
 {% if updates_enabled %}  # funsize
@@ -170,10 +178,12 @@
             description: |
                 This task generates MAR files and publishes unsigned bits for the locales {{ chunk_locales|join(', ') }}
         routes:
-            - tc-treeherder-stage.{{ branch }}.{{ revision_hash }}
+            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
+            - tc-treeherder.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
             - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.partials.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ chunk }}
             - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.partials.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ chunk }}
         extra:
+            {{ task_notifications("[funsize] Update generating task {} chunk {} for {}".format(platform, chunk, partial_version), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12) }}
             {{ common_extras(taskname='{}_{}_{}_update_generator'.format(buildername, chunk, partial_version), locales=chunk_locales, platform=platform) | indent(12)}}
             funsize:
                 partials:
@@ -192,6 +202,7 @@
 {% endfor %}
             treeherderEnv:
                 - staging
+                - production
             treeherder:
                 symbol: {{ chunk }}-{{ partial_version }}-g
                 groupSymbol: Update
@@ -256,13 +267,16 @@
                 This task signs MAR files and publishes signed bits for the locales {{ chunk_locales|join(', ') }}
 
         routes:
-            - tc-treeherder-stage.{{ branch }}.{{ revision_hash }}
+            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
+            - tc-treeherder.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
             - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.partials_signing.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ chunk }}
             - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.partials_signing.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ chunk }}
         extra:
+            {{ task_notifications("[funsize] MAR signing task {} chunk {} for {}".format(platform, chunk, partial_version), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12) }}
             {{ common_extras(taskname='{}_{}_{}_signing_task'.format(buildername, chunk, partial_version), locales=chunk_locales, platform=platform) | indent(12)}}
             treeherderEnv:
                 - staging
+                - production
             treeherder:
                 symbol: {{ chunk }}-{{ partial_version }}-s
                 groupSymbol: Update
@@ -285,6 +299,7 @@
         payload:
             signingManifest: "https://queue.taskcluster.net/v1/task/{{ stableSlugId('{}_{}_{}_update_generator'.format(buildername, chunk, partial_version)) }}/artifacts/public/env/manifest.json"
 
+{% do balrog_submission_builders.append('{}_{}_{}_balrog_task'.format(buildername, chunk, partial_version)) %}
 -
     taskId: "{{ stableSlugId('{}_{}_{}_balrog_task'.format(buildername, chunk, partial_version)) }}"
     reruns: 5
@@ -297,13 +312,16 @@
         expires: "{{ never }}"
         priority: "high"
         routes:
-            - tc-treeherder-stage.{{ branch }}.{{ revision_hash }}
+            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
+            - tc-treeherder.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
             - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.partials_balrog.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ chunk }}
             - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.partials_balrog.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ chunk }}
         extra:
+            {{ task_notifications("[funsize] Publish to Balrog {} chunk {} for {}".format(platform, chunk, partial_version), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12) }}
             {{ common_extras(taskname='{}_{}_{}_balrog_task'.format(buildername, chunk, partial_version), locales=chunk_locales, platform=platform) | indent(12)}}
             treeherderEnv:
                 - staging
+                - production
             treeherder:
                 symbol: {{ chunk }}-{{ partial_version }}-u
                 groupSymbol: Update
@@ -360,10 +378,10 @@
                 {% endif %}
             encryptedEnv:
                 - {{ encrypt_env_var(stableSlugId('{}_{}_{}_balrog_task'.format(buildername, chunk, partial_version)), now_ms,
-                                    now_ms + 24 * 3600 * 1000, "BALROG_USERNAME",
+                                    now_ms + 24 * 4 * 3600 * 1000, "BALROG_USERNAME",
                                     balrog_username) }}
                 - {{ encrypt_env_var(stableSlugId('{}_{}_{}_balrog_task'.format(buildername, chunk, partial_version)), now_ms,
-                                    now_ms + 24 * 3600 * 1000, "BALROG_PASSWORD",
+                                    now_ms + 24 * 4 * 3600 * 1000, "BALROG_PASSWORD",
                                     balrog_password) }}
             {% if signing_class != "dep-signing" %}
             features:
@@ -389,7 +407,8 @@
         priority: "high"
         retries: 5
         routes:
-            - tc-treeherder-stage.{{ branch }}.{{ revision_hash }}
+            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
+            - tc-treeherder.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
             - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.partials_beetmover.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ chunk }}
             - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.partials_beetmover.{{ partial_version | replace(".", "_") }}.{{ platform }}.{{ chunk }}
         payload:
@@ -409,10 +428,10 @@
                 DUMMY_ENV_FOR_ENCRYPT: "fake"
             encryptedEnv:
                 - {{ encrypt_env_var(stableSlugId(partial_beetmover_buildername), now_ms,
-                                   now_ms + 24 * 3600 * 1000, 'AWS_ACCESS_KEY_ID',
+                                   now_ms + 24 * 4 * 3600 * 1000, 'AWS_ACCESS_KEY_ID',
                                    beetmover_aws_access_key_id) }}
                 - {{ encrypt_env_var(stableSlugId(partial_beetmover_buildername), now_ms,
-                                   now_ms + 24 * 3600 * 1000, 'AWS_SECRET_ACCESS_KEY',
+                                   now_ms + 24 * 4 * 3600 * 1000, 'AWS_SECRET_ACCESS_KEY',
                                    beetmover_aws_secret_access_key) }}
         metadata:
             name: "[beetmover] {{ product }} {{ branch }} {{ platform }} locales partials candidates {{ chunk }}/{{ platform_info["chunks"] }}"
@@ -421,9 +440,11 @@
             source: https://github.com/mozilla/releasetasks
 
         extra:
+            {{ task_notifications("[beetmover] {} {} {} locales partials candidates {}/{}".format(product, branch, platform, chunk, platform_info.chunks), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12) }}
             {{ common_extras(taskname=partial_beetmover_buildername, locales=chunk_locales, platform=platform) | indent(12)}}
             treeherderEnv:
                 - staging
+                - production
             treeherder:
                 symbol: l10n-{{ chunk }}-{{ partial_version }}
                 groupSymbol: BM

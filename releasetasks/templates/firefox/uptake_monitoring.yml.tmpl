@@ -4,6 +4,10 @@
     requires:
         # tests will catch if this buildername changes
         - {{ stableSlugId("release-{}_{}_push_to_releases".format(branch, product)) }}
+    {% if sha1_repacks_platforms is defined and sha1_repacks_platforms and push_to_candidates_enabled and l10n_config.get("platforms") %}
+    {# Make sure SHA1 repacks are copied #}
+        - {{ stableSlugId("release-{}-{}_partner_repacks_copy_to_releases".format(branch, product)) }}
+    {% endif %}
     reruns: 5
     task:
         provisionerId: "buildbot-bridge"
@@ -16,8 +20,6 @@
         scopes:
             - project:releng:buildbot-bridge:builder-name:{{ uptake_buildername }}
         routes:
-            - tc-treeherder-stage.{{ branch }}.{{ revision_hash }}
-            - tc-treeherder.{{ branch }}.{{ revision_hash }}
             - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.uptake_monitoring
             - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.uptake_monitoring
         payload:
@@ -35,7 +37,7 @@
                 revision: "{{ revision }}"
                 tuxedo_server_url: "{{ tuxedo_server_url }}"
                 partial_versions: {% set pipe = joiner(", ") %}{% for p, e in sorted(partial_updates.items()) %}{{ pipe() }}{{ "{}build{}".format(p, e["buildNumber"]) }}{% endfor %}
-                platforms: {{ en_US_config["platforms"] | sort() | join(", ") }}
+                platforms: {{ uptake_monitoring_platforms| sort() | join(", ") }}
         metadata:
             name: "{{ product }} {{ branch }} uptake monitoring"
             description: "Release Promotion uptake monitoring"
@@ -44,15 +46,4 @@
 
         extra:
             {{ common_extras(taskname=uptake_buildername, locales=["null"], platform="null") | indent(12)}}
-            treeherderEnv:
-                - staging
-                - production
-            treeherder:
-                symbol: up-m
-                groupSymbol: Release
-                collection:
-                    opt: true
-                machine:
-                    platform: linux64
-                build:
-                    platform: all
+            {{ task_notifications("{} {} uptake monitoring".format(product, branch), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12) }}

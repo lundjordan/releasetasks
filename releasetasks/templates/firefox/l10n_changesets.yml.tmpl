@@ -38,12 +38,28 @@
             description:  Generates L10N changesets
 
         routes:
-            - tc-treeherder-stage.{{ branch }}.{{ revision_hash }}
+            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
+            - tc-treeherder.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
             - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.l10n_changesets
             - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.l10n_changesets
         extra:
             {{ common_extras(taskname=buildername, locales=["null"], platform="null") | indent(12)}}
+            treeherderEnv:
+                - staging
+                - production
+            treeherder:
+                symbol: L10N_CHS
+                groupSymbol: Release
+                collection:
+                    opt: true
+                machine:
+                    platform: linux64
+                build:
+                    platform: linux64
             l10n_changesets: "{{ format_l10n_changesets(l10n_changesets) }}"
+            {{ task_notifications("{} L10N changesets".format(branch), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12) }}
+
+
 
 -
     taskId: "{{ stableSlugId(buildername_beet) }}"
@@ -60,6 +76,8 @@
         priority: "high"
         retries: 5
         routes:
+            - tc-treeherder-stage.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
+            - tc-treeherder.v2.{{ branch }}.{{ revision }}.{{ pushlog_id }}
             - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.l10n_changesets_beetmover
             - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.l10n_changesets_beetmover
 
@@ -80,10 +98,10 @@
                 DUMMY_ENV_FOR_ENCRYPT: "fake"
             encryptedEnv:
                 - {{ encrypt_env_var(stableSlugId(buildername_beet), now_ms,
-                                   now_ms + 24 * 3600 * 1000, 'AWS_ACCESS_KEY_ID',
+                                   now_ms + 24 * 4 * 3600 * 1000, 'AWS_ACCESS_KEY_ID',
                                    beetmover_aws_access_key_id) }}
                 - {{ encrypt_env_var(stableSlugId(buildername_beet), now_ms,
-                                   now_ms + 24 * 3600 * 1000, 'AWS_SECRET_ACCESS_KEY',
+                                   now_ms + 24 * 4 * 3600 * 1000, 'AWS_SECRET_ACCESS_KEY',
                                    beetmover_aws_secret_access_key) }}
         metadata:
             name: "[beetmover] {{ product }} {{ branch }} move L10N changesets"
@@ -95,12 +113,14 @@
             {{ common_extras(taskname=buildername_beet, locales=["null"], platform="null") | indent(12)}}
             treeherderEnv:
                 - staging
+                - production
             treeherder:
                 symbol: L10N_CHS
                 groupSymbol: BM
                 collection:
                     opt: true
                 machine:
-                    platform: Linux64
+                    platform: linux64
                 build:
-                    platform: all
+                    platform: linux64
+            {{ task_notifications("[beetmover] {} {} move L10N changesets".format(product, branch), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12) }}

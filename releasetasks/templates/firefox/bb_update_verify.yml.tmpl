@@ -1,15 +1,18 @@
 {% for channel in release_channels %}
-{% set uv_totalchunks = 6 %}
+{% set uv_totalchunks = 12 %}
 {% for chunk in range(1, uv_totalchunks + 1) %}
 {% set uv_buildername = "release-{}_{}_{}_update_verify".format(branch, product, platform) %}
 {% set task_name = "{}_{}_{}".format(uv_buildername, channel, chunk) %}
 -
     taskId: "{{ stableSlugId(task_name) }}"
     requires:
-        {% for upstream_builder in artifact_completes_builders + artifact_partials_builders %}
+        {% for upstream_builder in artifact_completes_builders + artifact_partials_builders + balrog_submission_builders %}
         - {{ stableSlugId(upstream_builder) }}
         {% endfor %}
         - {{ stableSlugId("release-{}-{}_updates".format(branch, product)) }}
+        {% if update_verify_requires_cdn_push is defined and update_verify_requires_cdn_push %}
+        - {{  stableSlugId("release-{}-{}_uptake_monitoring".format(branch, product)) }}
+        {% endif %}
     reruns: 5
     task:
         provisionerId: buildbot-bridge
@@ -43,6 +46,9 @@
                 VERIFY_CONFIG: "{{ channel }}-{{ product }}-{{ platform }}.cfg"
                 TOTAL_CHUNKS: "{{ uv_totalchunks }}"
                 THIS_CHUNK: "{{ chunk }}"
+                {% if update_verify_channel is defined and update_verify_channel %}
+                CHANNEL: "{{ update_verify_channel }}"
+                {% endif %}
 
         metadata:
             owner: release@mozilla.com
@@ -53,17 +59,7 @@
 
         extra:
             {{ common_extras(taskname=task_name, locales=["null"], platform=platform) | indent(12)}}
+            {{ task_notifications("{} {} update verification {}/{}".format(platform, channel, chunk, uv_totalchunks), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12) }}
 
-        {# TODO: decide what to use here...
-        treeherder:
-            symbol: UV
-            groupSymbol: Release
-            collection:
-                opt: true
-            machine:
-                platform: {{ platform }}
-            build:
-                platform: none
-        #}
 {% endfor %}
 {% endfor %}

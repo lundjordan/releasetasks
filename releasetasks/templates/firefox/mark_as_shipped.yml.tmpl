@@ -1,4 +1,4 @@
-{% set buildername = "release-{}-{}_bouncer_aliases".format(branch, product) %}
+{% set buildername = "release-{}-{}_mark_as_shipped".format(branch, product) %}
 
 -
     taskId: "{{ stableSlugId(buildername) }}"
@@ -16,8 +16,9 @@
         scopes:
             - project:releng:buildbot-bridge:builder-name:{{ buildername }}
         routes:
-            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.bouncer_aliases
-            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.bouncer_aliases
+            - index.releases.v1.{{ branch }}.{{ revision }}.{{ product }}.{{ version | replace(".", "_") }}.build{{ buildNumber }}.mark_as_shipped
+            - index.releases.v1.{{ branch }}.latest.{{ product }}.latest.mark_as_shipped
+
         payload:
             buildername: "{{ buildername }}"
             sourcestamp:
@@ -27,18 +28,18 @@
                 product: "{{ product }}"
                 version: "{{ version }}"
                 build_number: {{ buildNumber }}
+                next_version: "{{ next_version }}"
                 repo_path: "{{ repo_path }}"
                 script_repo_revision: "{{ mozharness_changeset }}"
                 release_promotion: true
                 revision: "{{ revision }}"
-                tuxedo_server_url: "{{ tuxedo_server_url }}"
 
         metadata:
-            name: "{{ product }} {{ branch }} bouncer aliases"
-            description: "Release Promotion bouncer aliases"
+            name: "{{ product }} {{ branch }} mark release as shipped"
+            description: "Release Promotion mark release as shipped in Ship-It"
             owner: "release@mozilla.com"
             source: https://github.com/mozilla/releasetasks
 
         extra:
-            {{ task_notifications("{} {} bouncer aliases".format(product, branch), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12) }}
             {{ common_extras(taskname=buildername, locales=["null"], platform="null") | indent(12)}}
+            {{ task_notifications("{} {} mark release as shipped".format(product, branch), completed=["releasetasks"], failed=["releasetasks"], exception=["releasetasks"]) | indent(12) }}

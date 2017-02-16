@@ -30,17 +30,17 @@ push_to_releases_enabled: true
 # rc graph 2 only needs final_verify_channels
 channels:
 publish_to_balrog_channels:
-    - "release"
+    - "esr"
 final_verify_channels:
-    - "release"
+    - "esr"
 postrelease_bouncer_aliases_enabled: true
 uptake_monitoring_enabled: true
 postrelease_version_bump_enabled: true
 postrelease_mark_as_shipped_enabled: true
 
 product: "firefox"
-repo_path: "releases/mozilla-release"
-branch: "mozilla-release"
+repo_path: "releases/mozilla-esr45"
+branch: "mozilla-esr45"
 funsize_balrog_api_root: "http://balrog/api"
 balrog_api_root: "https://aus4-admin.mozilla.org/api"
 build_tools_repo_path: "build/tools"
