@@ -1,6 +1,6 @@
 import unittest
 from releasetasks.test import PVT_KEY_FILE, verify
-from releasetasks.test.firefox import make_task_graph, create_firefox_test_args
+from releasetasks.test.desktop import make_task_graph, create_firefox_test_args
 from voluptuous import Any, Schema
 
 
@@ -41,13 +41,16 @@ class TestFirefoxTaskNotifications(unittest.TestCase):
             'release_channels': ['foo'],
             'final_verify_channels': ['foo'],
             'signing_pvt_key': PVT_KEY_FILE,
+            'accepted_mar_channel_id': 'firefox-mozilla-beta',
+            'signing_cert': 'dep',
+            'moz_disable_mar_cert_verification': True,
             'en_US_config': {
                 "platforms": {
-                    "macosx64": {"task_id": "abc"},
-                    "win32": {"task_id": "def"},
-                    "win64": {"task_id": "jgh"},
-                    "linux": {"task_id": "ijk"},
-                    "linux64": {"task_id": "lmn"},
+                    "macosx64": {'signed_task_id': 'abc', 'unsigned_task_id': 'abc'},
+                    "win32": {'signed_task_id': 'abc', 'unsigned_task_id': 'abc'},
+                    "win64": {'signed_task_id': 'abc', 'unsigned_task_id': 'abc'},
+                    "linux": {'signed_task_id': 'abc', 'unsigned_task_id': 'abc'},
+                    "linux64": {'signed_task_id': 'abc', 'unsigned_task_id': 'abc'},
                 }
             },
         })
