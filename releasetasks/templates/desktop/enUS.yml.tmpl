@@ -116,7 +116,7 @@
                         {% if platform_info["signed_task_id"] != platform_info["unsigned_task_id"] %}
                         to_mar: "https://queue.taskcluster.net/v1/task/{{ platform_info["signed_task_id"] }}/artifacts/public/build/update/target.complete.mar"
                         {% else %}
-                        to_mar: "https://queue.taskcluster.net/v1/task/{{ platform_info["signed_task_id"] }}/artifacts/public/build/{{ product }}-{{ appVersion }}.{{ locale }}.{{ buildbot2ftp(platform) }}.complete.mar"
+                        to_mar: "https://queue.taskcluster.net/v1/task/{{ platform_info["signed_task_id"] }}/artifacts/public/build/{{ funsize_product }}-{{ appVersion }}.{{ locale }}.{{ buildbot2ftp(platform) }}.complete.mar"
                         {% endif %}
                         platform: {{ platform }}
                         branch: {{ branch }}
@@ -153,7 +153,7 @@
                 - /runme.sh
 
             env:
-                FILENAME_TEMPLATE: "{{ product }}-{{ partial_version }}-{{ version }}.en-US.{{ buildbot2ftp(platform) }}.partial.mar"
+                FILENAME_TEMPLATE: "{{ funsize_product }}-{{ partial_version }}-{{ version }}.en-US.{{ buildbot2ftp(platform) }}.partial.mar"
                 {% if moz_disable_mar_cert_verification is defined and moz_disable_mar_cert_verification %}
                 MOZ_DISABLE_MAR_CERT_VERIFICATION: {{ moz_disable_mar_cert_verification }}
                 {% endif %}
